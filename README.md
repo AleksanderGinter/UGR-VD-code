@@ -17,7 +17,7 @@ in case of tyres etc. try to use L/R depending on the tyre side
 Once you get the data (make sure they are in the same folder as the matlab file and get the path to the folder.
 
 
-PLEASE USE SEPARATE FOLDERS FOR SEPARATE DATA TYPES
+PLEASE USE SEPARATE FOLDERS FOR SEPARATE DATA GRAPHS - f.e. don't mix slip angles and lateral g
 
 
 You can do that by going to that folder in the Windows file explorer -> right click the folder address (bar above the the files)
