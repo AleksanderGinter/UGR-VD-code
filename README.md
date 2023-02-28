@@ -5,8 +5,11 @@ Welcome to VD data processing!
 To get the data ready, go to MoTeC and do the following:
 
 -select the data you need (depends on the file you run)
+
 -right click on the data -> export -> change output file format to MATLAB
+
 -change output sample rate to custom -> 1000Hz
+
 -save the file to the folder you want
 
 CRITICAL: CHANGE THE FILE NAME SO IT HAS NO DASHES - I recommend using a SURNAME_STINT_NO_L/R
