@@ -1,15 +1,22 @@
-s = struct();
+clear all
 clf
+s = struct();
 
+% ---------------  CHANGE THESE  --------------------
 
 % get your values of camber
 camber = [-1.4, -3.0, -2.4, -2.7];
 times = [67.400, 67.261, 67.246, 67.237];
-runs = [];
 
+% number of consecutive values that are averaged
+% basically number of ms (miliseconds)
+no_sampl = 200;
 
 % get your path to the folder where the runs are saved
 folder = 'D:\UGRacing\UGR EV23\VD\Side challenge 1';
+
+% ----------------------------------------------------
+
 
 %// Get all MAT files in directory
 f = dir(fullfile(folder, '*.mat'));
@@ -29,7 +36,7 @@ for idx = 1 : 2 : numel(f)
 
         if side == 1
 
-            %getting data into structure
+        %getting data into structure
             s.(['TSA_FL_Time_' run]) = Tire_Slip_Angle_FL.Time;
             s.(['TSA_FL_Value_' run]) = Tire_Slip_Angle_FL.Value;
         
@@ -38,7 +45,7 @@ for idx = 1 : 2 : numel(f)
 
         else 
     
-            %getting data into structure
+        %getting data into structure
             s.(['TSA_FR_Time_' run]) = Tire_Slip_Angle_RL.Time;
             s.(['TSA_FR_Value_' run]) = Tire_Slip_Angle_RL.Value;
         
@@ -47,59 +54,47 @@ for idx = 1 : 2 : numel(f)
         end
     end
 
-        % getting the lap started at 0
+    % getting the lap started at 0
         s.(['TSA_FL_Time_' run]) = s.(['TSA_FL_Time_' run]) - s.(['TSA_FL_Time_' run])(1,1);
         s.(['TSA_RL_Time_' run]) = s.(['TSA_RL_Time_' run]) - s.(['TSA_RL_Time_' run])(1,1);
         s.(['TSA_FR_Time_' run]) = s.(['TSA_FR_Time_' run]) - s.(['TSA_FR_Time_' run])(1,1);
         s.(['TSA_RR_Time_' run]) = s.(['TSA_RR_Time_' run]) - s.(['TSA_RR_Time_' run])(1,1);
 
     
-        % stitching the values together
+    % stitching the values together
         s.(['AVE_TSA_F_' run]) = (s.(['TSA_FL_Value_' run]) + s.(['TSA_FR_Value_' run])) ./2;
         s.(['AVE_TSA_R_' run]) = (s.(['TSA_RL_Value_' run]) + s.(['TSA_RR_Value_' run])) ./2;
     
-        %Difference in angle, F- R
+    % Difference in angle, F- R
         s.(['DIFF_TSA_' run]) = s.(['AVE_TSA_F_' run]) - s.(['AVE_TSA_R_' run]);
 
-
-        % reshape to average for N continuous samples
-        % deletes the last k values so that there is no remainder after
-        % concatenation
-
-        no_sampl = 10;
-
-        to_delete = mod(int64(length(s.(['DIFF_TSA_' run]))), no_sampl);
-
-
-        s.(['DIFF_TSA_' run])(end-to_delete:end) = [];
-        s.(['TSA_RR_Time_' run])(end-to_delete:end) = [];
-
-        % TODO try reshape (A, N, {})
-
         
-        disp(to_delete)
-        disp(length(s.(['DIFF_TSA_' run])))
-        disp(run)
+% reshape to average for N continuous samples
+% deletes the last k values so that there is no remainder after
+% concatenation
 
-        s.(['NEW_DIFF_TSA_' run]) = reshape(s.(['DIFF_TSA_' run]), [], idivide(int64(length(s.(['DIFF_TSA_' run]))), int64(no_sampl)));
-        s.(['NEW_TSA_RR_Time_' run]) = reshape(s.(['TSA_RR_Time_' run]), [], idivide(int64(length(s.(['TSA_RR_Time_' run]))), int64(no_sampl)));
+    % get TSA data 
+        to_delete = mod(int64(length(s.(['DIFF_TSA_' run]))), no_sampl);
+        new_size = int64(length(s.(['DIFF_TSA_' run]))) - to_delete;
 
-        % save the time of the run
-        %accounts for motec data system
-%         times(end+1) = string((s.(['TSA_FL_Time_' run])(1, end)) + 0.001);
+        s.(['DIFF_TSA_' run]) = mean(reshape(s.(['DIFF_TSA_' run])(1:new_size), no_sampl, []));
+
+   
+    % get time in order
+        to_delete_time = mod(int64(length(s.(['TSA_FL_Time_' run]))), no_sampl);
+        new_size = int64(length(s.(['TSA_FL_Time_' run]))) - to_delete;
+
+        s.(['TSA_FL_Time_' run]) = mean(reshape(s.(['TSA_FL_Time_' run])(1:new_size), no_sampl, []));
 
 
-        %create graph
-        plot(s.(['NEW_TSA_RR_Time_' run]), s.(['NEW_DIFF_TSA_' run]))
-
-%         histogram(s.(['DIFF_TSA_' run]), 1000);
+    %create graph
+        plot(s.(['TSA_FL_Time_' run]), s.(['DIFF_TSA_' run]))
         hold on
 
 end
 
+% pretty up the figure
 grid on
-% xlim([0,3595]);
-% ylim([0,8]);
 xlabel('Time, [s]','FontName', 'Serif');
 ylabel('Difference in ave slip, [deg]', 'FontName', 'Serif')
 ax = gca;
@@ -111,22 +106,3 @@ ax.LineWidth = 1.25;
 legend_strings = 'Camber: ' + string(camber) + '; Laptime:' + string(times);
 legend(legend_strings)
 hold off
-
-%-----------------------
-% figure(2);
-% 
-% % relative to 1 run
-% for ind = 1:numel(f)/2
-%     plot(s.(['TSA_RR_Time_' runs(ind)]), (s.(['DIFF_TSA_' runs(ind)]) - s.(['DIFF_TSA_' runs(1)])))
-%     hold on
-% end
-% 
-% xlabel('Time, [s]','FontName', 'Serif');
-% ylabel('Difference in ave slip, relative, [deg]', 'FontName', 'Serif')
-% ax = gca;
-% ax.FontSize = 16;
-% ax.FontName = 'Serif';
-% ax.LineWidth = 1.25;
-% 
-% legend_strings = 'Camber: ' + string(camber) + '; Laptime:' + string(times);
-
