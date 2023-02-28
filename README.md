@@ -1,5 +1,4 @@
 # UGR-VD-code
-For UGRacing Vehicle Dyncamics data processing
 
 Welcome to VD data processing!
 
