@@ -4,63 +4,52 @@ s = struct();
 
 % ---------------  CHANGE THESE  --------------------
 
-% get your values of camber
-camber = [-1.4, -3.0, -2.4, -2.7];
-times = [67.400, 67.261, 67.246, 67.237];
-
 % number of consecutive values that are averaged
 % basically number of ms (miliseconds)
-no_sampl = 200;
+no_sampl = 300;
 
 % get your path to the folder where the runs are saved
-folder = 'D:\UGRacing\UGR EV23\VD\Side challenge 1';
+folder = 'D:\UGRacing\UGR EV23\VD\Challenge2\TSA';
 
+manual_legend = ['Final setup', 'Stock setup'];
 % ----------------------------------------------------
+
+
+% get speed range correct
 
 
 %// Get all MAT files in directory
 f = dir(fullfile(folder, '*.mat'));
+runs = {};
+times = {};
 
 
 %// For each MAT file...
-for idx = 1 : 2 : numel(f)
+for idx = 1 : numel(f)
+% for idx = 1:1
 
     %// Get absolute path to MAT file - i.e. folder/file.mat
-    run = f(idx).name(1:end-6);   %get the name of the run
+    run = f(idx).name(1:end-4);   %get the name of the run
+    runs{length(runs) + 1} = run;
 
-    % load data for right and left side
-    for side = 1:2
-        
-        name = fullfile(folder, f(idx).name);
-        load(name);
+    name = fullfile(folder, f(idx).name);
+    load(name);
 
-        if side == 1
+    %getting data into structure
+        s.(['Time_' run]) = Tire_Slip_Angle_FL.Time;
+        s.(['TSA_FL_Value_' run]) = Tire_Slip_Angle_FL.Value;
+        s.(['TSA_RL_Value_' run]) = Tire_Slip_Angle_RR.Value;
+        s.(['TSA_FR_Value_' run]) = Tire_Slip_Angle_RL.Value;
+        s.(['TSA_RR_Value_' run]) = Tire_Slip_Angle_RR.Value;
 
-        %getting data into structure
-            s.(['TSA_FL_Time_' run]) = Tire_Slip_Angle_FL.Time;
-            s.(['TSA_FL_Value_' run]) = Tire_Slip_Angle_FL.Value;
-        
-            s.(['TSA_RL_Time_' run]) = Tire_Slip_Angle_RL.Time;
-            s.(['TSA_RL_Value_' run]) = Tire_Slip_Angle_RL.Value;
-
-        else 
-    
-        %getting data into structure
-            s.(['TSA_FR_Time_' run]) = Tire_Slip_Angle_RL.Time;
-            s.(['TSA_FR_Value_' run]) = Tire_Slip_Angle_RL.Value;
-        
-            s.(['TSA_RR_Time_' run]) = Tire_Slip_Angle_RL.Time;
-            s.(['TSA_RR_Value_' run]) = Tire_Slip_Angle_RL.Value;
-        end
-    end
+        s.(['Lap_Dist_' run]) = Corr_Dist.Value;
+        s.(['Speed_' run]) = Ground_Speed.Value;
 
     % getting the lap started at 0
-        s.(['TSA_FL_Time_' run]) = s.(['TSA_FL_Time_' run]) - s.(['TSA_FL_Time_' run])(1,1);
-        s.(['TSA_RL_Time_' run]) = s.(['TSA_RL_Time_' run]) - s.(['TSA_RL_Time_' run])(1,1);
-        s.(['TSA_FR_Time_' run]) = s.(['TSA_FR_Time_' run]) - s.(['TSA_FR_Time_' run])(1,1);
-        s.(['TSA_RR_Time_' run]) = s.(['TSA_RR_Time_' run]) - s.(['TSA_RR_Time_' run])(1,1);
+        s.(['Time_' run]) = s.(['Time_' run]) - s.(['Time_' run])(1,1);
+        s.(['Lap_Dist_' run]) = s.(['Lap_Dist_' run]) - s.(['Lap_Dist_' run])(1,1);
+        times{length(times) + 1} = s.(['Time_' run])(1, end);
 
-    
     % stitching the values together
         s.(['AVE_TSA_F_' run]) = (s.(['TSA_FL_Value_' run]) + s.(['TSA_FR_Value_' run])) ./2;
         s.(['AVE_TSA_R_' run]) = (s.(['TSA_RL_Value_' run]) + s.(['TSA_RR_Value_' run])) ./2;
@@ -77,32 +66,39 @@ for idx = 1 : 2 : numel(f)
         to_delete = mod(int64(length(s.(['DIFF_TSA_' run]))), no_sampl);
         new_size = int64(length(s.(['DIFF_TSA_' run]))) - to_delete;
 
-        s.(['DIFF_TSA_' run]) = mean(reshape(s.(['DIFF_TSA_' run])(1:new_size), no_sampl, []));
+        s.(['DIFF_TSA_' run]) = smooth(mean(reshape(s.(['DIFF_TSA_' run])(1:new_size), no_sampl, [])));
 
-   
-    % get time in order
-        to_delete_time = mod(int64(length(s.(['TSA_FL_Time_' run]))), no_sampl);
-        new_size = int64(length(s.(['TSA_FL_Time_' run]))) - to_delete;
-
-        s.(['TSA_FL_Time_' run]) = mean(reshape(s.(['TSA_FL_Time_' run])(1:new_size), no_sampl, []));
-
+       % get lap distnace and speed in order
+        s.(['Lap_Dist_' run]) = mean(reshape(s.(['Lap_Dist_' run])(1:new_size), no_sampl, []));
+        s.(['Speed_' run]) = round(mean(reshape(s.(['Speed_' run])(1:new_size), no_sampl, [])));
 
     %create graph
-        plot(s.(['TSA_FL_Time_' run]), s.(['DIFF_TSA_' run]))
+        markers = ['o', 'x', '^', '<', '+'];
+
+        patch(s.(['Lap_Dist_' run]), s.(['DIFF_TSA_' run]),s.(['Speed_' run]), 'FaceColor', 'none', 'EdgeColor', 'interp', 'Marker', markers(idx), 'LineWidth', 1.5)
+%         scatter(s.(['TSA_FL_Time_' run]), s.(['DIFF_TSA_' run]),18, s.(['speed_' run]), markers(idx));
+%         plot(s.(['Lap_Dist_' run]), s.(['DIFF_TSA_' run]), 'LineWidth', 0.75)
+        colormap jet
         hold on
 
 end
 
 % pretty up the figure
 grid on
-xlabel('Time, [s]','FontName', 'Serif');
-ylabel('Difference in ave slip, [deg]', 'FontName', 'Serif')
+xlabel('Corrected Lap Distance, [m]','FontName', 'Serif');
+ylabel('Difference in average slip, F-R, [deg]', 'FontName', 'Serif')
+axis([500 1600 -3 2])
 ax = gca;
 ax.FontSize = 16;
 ax.FontName = 'Serif';
 ax.LineWidth = 1.25;
+h = colorbar;
+ylabel(h, 'Car speed, kph')
 
-
-legend_strings = 'Camber: ' + string(camber) + '; Laptime:' + string(times);
-legend(legend_strings)
+legend_strings = 'Driver: ' + string(runs) + '; Laptime: ' + string(times);
+for i = 1:idx
+    L(i) = plot(nan, nan, ['b' markers(i)]);
+end
+leg = legend(L, legend_strings);
+set(leg, 'Interpreter', 'none');
 hold off
