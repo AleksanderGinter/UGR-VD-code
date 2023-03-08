@@ -92,7 +92,11 @@ x = xlabel('Corrected Lap Distance, [m]','FontName', 'Serif');
 set(x, 'FontSize', 24)
 y = ylabel('Difference in average slip, F-R, [deg]', 'FontName', 'Serif');
 set(y, 'FontSize', 24)
+
+% ------------------------------ CHANGE AXES -----------------------------
 axis([400 1500 -3 3])
+%-------------------------------------------------------------------------
+
 ax = gca;
 ax.FontSize = 16;
 ax.FontName = 'Serif';
