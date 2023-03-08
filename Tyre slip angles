@@ -11,7 +11,7 @@ no_sampl = 300;
 % get your path to the folder where the runs are saved
 folder = 'D:\UGRacing\UGR EV23\VD\Challenge2\TSA';
 
-manual_legend = ['Final setup', 'Stock setup'];
+manual_legend = {'Final setup', 'Stock setup'};
 % ----------------------------------------------------
 
 
@@ -22,6 +22,7 @@ manual_legend = ['Final setup', 'Stock setup'];
 f = dir(fullfile(folder, '*.mat'));
 runs = {};
 times = {};
+balance = {};
 
 
 %// For each MAT file...
@@ -37,10 +38,10 @@ for idx = 1 : numel(f)
 
     %getting data into structure
         s.(['Time_' run]) = Tire_Slip_Angle_FL.Time;
-        s.(['TSA_FL_Value_' run]) = Tire_Slip_Angle_FL.Value;
-        s.(['TSA_RL_Value_' run]) = Tire_Slip_Angle_RR.Value;
-        s.(['TSA_FR_Value_' run]) = Tire_Slip_Angle_RL.Value;
-        s.(['TSA_RR_Value_' run]) = Tire_Slip_Angle_RR.Value;
+        s.(['TSA_FL_Value_' run]) = abs(Tire_Slip_Angle_FL.Value);
+        s.(['TSA_RL_Value_' run]) = abs(Tire_Slip_Angle_RR.Value);
+        s.(['TSA_FR_Value_' run]) = abs(Tire_Slip_Angle_RL.Value);
+        s.(['TSA_RR_Value_' run]) = abs(Tire_Slip_Angle_RR.Value);
 
         s.(['Lap_Dist_' run]) = Corr_Dist.Value;
         s.(['Speed_' run]) = Ground_Speed.Value;
@@ -56,6 +57,8 @@ for idx = 1 : numel(f)
     
     % Difference in angle, F- R
         s.(['DIFF_TSA_' run]) = s.(['AVE_TSA_F_' run]) - s.(['AVE_TSA_R_' run]);
+
+        balance{idx} = round(sum(s.(['DIFF_TSA_' run]))/length(s.(['DIFF_TSA_' run])), 3);
 
         
 % reshape to average for N continuous samples
@@ -85,20 +88,23 @@ end
 
 % pretty up the figure
 grid on
-xlabel('Corrected Lap Distance, [m]','FontName', 'Serif');
-ylabel('Difference in average slip, F-R, [deg]', 'FontName', 'Serif')
-axis([500 1600 -3 2])
+x = xlabel('Corrected Lap Distance, [m]','FontName', 'Serif');
+set(x, 'FontSize', 24)
+y = ylabel('Difference in average slip, F-R, [deg]', 'FontName', 'Serif');
+set(y, 'FontSize', 24)
+axis([400 1500 -3 3])
 ax = gca;
 ax.FontSize = 16;
 ax.FontName = 'Serif';
 ax.LineWidth = 1.25;
 h = colorbar;
-ylabel(h, 'Car speed, kph')
+ylabel(h, 'Car speed, kph', 'FontSize', 20)
 
-legend_strings = 'Driver: ' + string(runs) + '; Laptime: ' + string(times);
+legend_strings = string(manual_legend) + '; Laptime: ' + string(times) + '; M.D.f.O.B: ' + string(balance);
 for i = 1:idx
     L(i) = plot(nan, nan, ['b' markers(i)]);
 end
 leg = legend(L, legend_strings);
-set(leg, 'Interpreter', 'none');
+set(leg, 'Interpreter', 'none', 'FontSize', 16);
 hold off
+
