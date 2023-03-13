@@ -18,6 +18,9 @@ To get the data ready, go to MoTeC and do the following:
 
 Once you get the data, specify the path to to the folder in matlab script. You can do that by going to that folder in the Windows file explorer -> right click the folder address (bar above the the files) and copy it as a text. Paste that into the MATLAB script.
 
-Remember to change axes range on line 97, otherwise the graph may be clipped.
+Remember to change axes range (around) on line 97, otherwise the graph may be clipped.
+
+
+For *TSA_Throttle_Brake*, repeat the steps, but instead of adding **ground speed** add **Throttle Pos** and **Brake Pos** in MoTeC
 
 All should be ready to get some graphs :)
