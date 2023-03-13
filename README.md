@@ -8,7 +8,7 @@ To get the data ready, go to MoTeC and do the following:
 
 -Create a new workbook (right click on the driver tab and select *Create new workbook* <br>
 -right click on the background -> properties -> Add channel -> Add **Corr distance**, **Ground speed** and all **Tire slip angles** <br>
-(For *TSA_Throttle_Brake*, repeat the steps, but instead of adding **ground speed** add **Throttle Pos** and **Brake Pos** in MoTeC) <br>
+(For *TSA_Throttle_Brake*, add **Throttle Pos** and **Brake Pos** instead of **Ground Speed**) <br>
 -right click on the background again, select *Export data* <br>
 -change *Output File Format* to MATLAB <br>
 -change output sample rate to custom -> 1000Hz <br>
