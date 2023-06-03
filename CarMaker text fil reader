@@ -1,0 +1,78 @@
+import string
+import pandas as pd
+import numpy as np
+# get y-data profiling
+
+data_list = []
+data_proc_time = []
+data_proc_speed = []
+links = ['D:/UGRacing/UGR EV23/VD/CM data/20230531/150NDF.txt',
+         'D:/UGRacing/UGR EV23/VD/CM data/20230531/150NDF_v2.txt',
+         'D:/UGRacing/UGR EV23/VD/CM data/20230531/150NDF_v3.txt',
+         'D:/UGRacing/UGR EV23/VD/CM data/20230531/150NDF_v4.txt',
+         'D:/UGRacing/UGR EV23/VD/CM data/20230531/300NDF.txt']
+
+
+def read_file(x):
+    """
+    reads text files from list, calls data analysis funcs
+
+    :param x: link to text file
+    :return: calls analyse_data
+    """
+    with open(x, 'r') as f:
+        for line in f.readlines():
+            get_data(line)
+        analyse_data(data_list)
+
+
+def get_data(x):
+    """
+    reads text file line by line, gets lap no, laptime and dist saved to data_list
+
+    :param x: line from the text file
+    :return: list of data (lap no, laptime and dist)
+    """
+    if 'Lap' in x:
+        x = x.replace(" ", "").replace("\t", "").strip().split("=")
+
+        for index in range(0, len(x)):
+            x[index] = "".join(i for i in x[index] if i.isnumeric())
+        data_list.append(x)
+
+
+def group_rows(x):
+    return x // 2
+
+# todo SEPARATE DATAFRAMES, LIKELY TO OVERWRITE EXISTING ONE
+
+
+def analyse_data(x):
+    """
+    gets summary of data for speed and time, removes 1st lap
+
+    :param x: data_list for given run
+    :return: describe of time and average speed
+    """
+
+    data = pd.DataFrame(x, columns=['Lap', 'Time', 'Dist', 'Dist 2'])
+    data[['Lap', 'Time', 'Dist', 'Dist 2']] = data[['Lap', 'Time', 'Dist', 'Dist 2']].apply(pd.to_numeric)
+
+    data = data.groupby(group_rows)[['Time', 'Dist', 'Dist 2']].agg('sum')
+    data[['Time', 'Dist', 'Dist 2']] = data[['Time', 'Dist', 'Dist 2']].div([1000, 10000, 10000]).round(3)
+
+    data.drop(index=data.index[0], axis=0, inplace=True)
+
+    data['Speed_ave'] = (data['Dist'] / data['Time']).round(3)
+
+    data_proc_time.append(data['Time'].describe()), data_proc_speed.append(data['Speed_ave'].describe())
+
+    global data_list
+    data_list = []
+
+
+for link in links:
+    read_file(link)
+
+# print(data_proc_time)
+print(data_proc_speed)
