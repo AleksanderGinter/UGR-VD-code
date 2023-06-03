@@ -6,45 +6,32 @@ import numpy as np
 data_list = []
 data_proc_time = []
 data_proc_speed = []
-links = ['D:/UGRacing/UGR EV23/VD/CM data/20230531/150NDF.txt',
-         'D:/UGRacing/UGR EV23/VD/CM data/20230531/150NDF_v2.txt',
-         'D:/UGRacing/UGR EV23/VD/CM data/20230531/150NDF_v3.txt',
-         'D:/UGRacing/UGR EV23/VD/CM data/20230531/150NDF_v4.txt',
-         'D:/UGRacing/UGR EV23/VD/CM data/20230531/300NDF.txt']
+links = ['D:/UGRacing/UGR EV23/VD/CM data/20230531/150NDF.txt']
 
 
-def read_file(x):
+def get_data(file):
     """
-    reads text files from list, calls data analysis funcs
+    reads text file line by line, gets lap no, laptime and distances
 
-    :param x: link to text file
-    :return: calls analyse_data
-    """
-    with open(x, 'r') as f:
-        for line in f.readlines():
-            get_data(line)
-        analyse_data(data_list)
-
-
-def get_data(x):
-    """
-    reads text file line by line, gets lap no, laptime and dist saved to data_list
-
-    :param x: line from the text file
+    :param file: link to text file
     :return: list of data (lap no, laptime and dist)
     """
-    if 'Lap' in x:
-        x = x.replace(" ", "").replace("\t", "").strip().split("=")
 
-        for index in range(0, len(x)):
-            x[index] = "".join(i for i in x[index] if i.isnumeric())
-        data_list.append(x)
+    x = []
+
+    with open(file, 'r') as f:
+        for line in f.readlines():
+            if 'Lap' in line:
+                line = line.replace(" ", "").replace("\t", "").strip().split("=")
+
+                for index in range(0, len(line)):
+                    line[index] = "".join(i for i in line[index] if i.isnumeric())
+                x.append(line)
+    return analyse_data(x)
 
 
 def group_rows(x):
     return x // 2
-
-# todo SEPARATE DATAFRAMES, LIKELY TO OVERWRITE EXISTING ONE
 
 
 def analyse_data(x):
@@ -65,14 +52,8 @@ def analyse_data(x):
 
     data['Speed_ave'] = (data['Dist'] / data['Time']).round(3)
 
-    data_proc_time.append(data['Time'].describe()), data_proc_speed.append(data['Speed_ave'].describe())
-
-    global data_list
-    data_list = []
+    return data['Time'].describe(), data['Speed_ave'].describe()
 
 
 for link in links:
-    read_file(link)
-
-# print(data_proc_time)
-print(data_proc_speed)
+    print(get_data(link))
