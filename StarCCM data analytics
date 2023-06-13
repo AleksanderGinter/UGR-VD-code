@@ -1,0 +1,85 @@
+import re
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+# get y-data profiling
+
+
+links = ['D:/UGRacing/UGR EV23/VD/aero_data_Nev/incorrect_data/sim6_8ms.txt',
+         'D:/UGRacing/UGR EV23/VD/aero_data_Nev/incorrect_data/sim6_10ms.txt',
+         'D:/UGRacing/UGR EV23/VD/aero_data_Nev/incorrect_data/sim6_14ms.txt',
+         'D:/UGRacing/UGR EV23/VD/aero_data_Nev/incorrect_data/sim6_16ms.txt']
+
+# used as keys for sim cad version and speed of the flow
+runs = []
+
+# dict for dataframes
+data_dict = {}
+
+# get keys
+for link in links:
+    # get key that is sim number and speed
+    runs.append(link.split('/')[len(link.split('/'))-1][:-4])
+
+
+def get_data(file):
+    """
+    reads text file line by line, gets lap no, laptime and distances
+
+    :param file: link to text file
+    :return: list of data (lap no, laptime and dist)
+    """
+
+    index_names = []
+    data = []
+
+    with open(file, 'r') as f:
+        for line in f.readlines():
+            line = line.strip('\n').replace('Wheel, wheel internals, tire front', 'Tire front')\
+                .replace('Wheel, wheel internals, tire rear', 'Tire rear')
+            # todo zrobić ifa na to /\
+            if 'flow' in line and 'no data' not in line:
+
+                # Extract the words after 'External flow'
+                words = re.search(r'External flow: (\D[\w\s]+)', line).group(1).rstrip()
+
+                index_names.append(words)
+
+                # Find the index of the last square brackets
+                start_index = line.rfind('[')
+                end_index = line.rfind(']')
+
+                if start_index != -1 and end_index != -1:
+                    # Extract the substring between the last square brackets
+                    last_list_str = line[start_index + 1:end_index]
+
+                    # Split the substring by commas and extract the numerical values
+                    values = [float(val.strip()) for val in last_list_str.split(',')]
+                    data.append(values)
+
+            elif 'Totals' in line:
+                words = 'Total'
+                index_names.append(words)
+
+                start_index = line.rfind('[')
+                end_index = line.rfind(']')
+
+                if start_index != -1 and end_index != -1:
+                    # Extract the substring between the last square brackets
+                    last_list_str = line[start_index + 1:end_index]
+
+                    # Split the substring by commas and extract the numerical values
+                    values = [float(val.strip()) for val in last_list_str.split(',')]
+                    data.append(values)
+    return pd.DataFrame(data, index=index_names, columns=['Drag', 'Side Force', 'Lift'])
+
+
+for link, run_no in zip(links, runs):
+    # assign values to a dictionary
+    data_dict[run_no] = get_data(link)
+
+
+# example scatter plot
+plt.scatter(np.square(np.array([int(re.findall(r'\d+(?=ms)', key)[0]) for key in runs])),
+            ([data_dict[key].loc['Total']['Lift'] for key in runs]))
+plt.show()
