@@ -89,7 +89,8 @@ FW_total = ['wing front 1', 'wing front 2', 'wing front 3']
 
 
 # todo zrobic basic GUI/dropdown liste z rzeczami i jaka siła
-# scatter plot
+# scatter plot - for total values pass a list of indexes to the loc object
+
 
 fig, (ax1, ax2, ax3) = plt.subplots(3,1)
 
