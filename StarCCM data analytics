@@ -78,7 +78,7 @@ for link, run_no in zip(links, runs):
     # assign values to a dictionary
     data_dict[run_no] = get_data(link)
 
-
+#Part to change, plots -------------------------------------------------------------------
 # example scatter plot
 plt.scatter(np.square(np.array([int(re.findall(r'\d+(?=ms)', key)[0]) for key in runs])),
             ([data_dict[key].loc['Total']['Lift'] for key in runs]))
