@@ -86,43 +86,29 @@ for link, run_no in zip(links, runs):
 # values for total components for plots
 RW_total = ['wing rear 1', 'wing rear 2', 'wing rear 3', 'wing rear 4', 'wing rear 5']
 FW_total = ['wing front 1', 'wing front 2', 'wing front 3']
-
+part = 'Tire front'
 
 # todo zrobic basic GUI/dropdown liste z rzeczami i jaka siła
 # scatter plot - for total values pass a list of indexes to the loc object
 
-
-fig, (ax1, ax2, ax3) = plt.subplots(3,1)
+fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
 
 ax1.scatter((np.array([int(re.findall(r'\d+(?=ms)', key)[0]) for key in runs])),
-            np.divide(np.array([data_dict[key].loc['Undertray bottom']['Lift'].sum() for key in runs]),
-                      np.array([data_dict[key].loc['Undertray bottom']['Drag'].sum() for key in runs])))
+            np.divide(np.array([data_dict[key].loc[part]['Lift'].sum() for key in runs]),
+                      np.array([data_dict[key].loc[part]['Drag'].sum() for key in runs])))
 ax1.set_xlabel('velocity, ms')
-ax1.set_ylabel('FW L/D')
+ax1.set_ylabel('{} L/D'.format(part))
 
 ax2.scatter((np.array([int(re.findall(r'\d+(?=ms)', key)[0]) for key in runs])),
-            (np.array([data_dict[key].loc['Undertray bottom']['Lift'].sum() for key in runs])))
+            (np.array([data_dict[key].loc[part]['Lift'].sum() for key in runs])))
 ax2.set_xlabel('velocity, ms')
-ax2.set_ylabel('FW Lift')
+ax2.set_ylabel('{} Lift'.format(part))
 
 ax3.scatter((np.array([int(re.findall(r'\d+(?=ms)', key)[0]) for key in runs])),
-            (np.array([data_dict[key].loc['Undertray bottom']['Drag'].sum() for key in runs])))
+            (np.array([data_dict[key].loc[part]['Drag'].sum() for key in runs])))
 ax3.set_xlabel('velocity, ms')
-ax3.set_ylabel('FW Drag')
+ax3.set_ylabel('{} Drag'.format(part))
 
 plt.subplots_adjust(hspace=0.5)
-
-
-# plt.scatter((np.array([int(re.findall(r'\d+(?=ms)', key)[0]) for key in runs])),
-#             np.divide(np.array([data_dict[key].loc[['wing rear 1', 'wing rear 2', 'wing rear 3', 'wing rear 4', 'wing rear 5']]['Lift'].sum() for key in runs]),
-#                       np.array([data_dict[key].loc[['wing rear 1', 'wing rear 2', 'wing rear 3', 'wing rear 4', 'wing rear 5']]['Drag'].sum() for key in runs])))
-#
-# plt.title("Total force L/D ratios")
-# plt.xlabel("velocity, ms")
-# plt.ylabel("L/D")
-
-# try adding as a whole part
-# scatter plot
-
 
 plt.show()
