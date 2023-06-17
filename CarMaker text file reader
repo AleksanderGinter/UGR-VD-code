@@ -1,59 +1,61 @@
-import string
+import cmerg
 import pandas as pd
 import numpy as np
-# get y-data profiling
-
-data_list = []
-data_proc_time = []
-data_proc_speed = []
-links = ['D:/UGRacing/UGR EV23/VD/CM data/20230531/150NDF.txt']
+import matplotlib.pyplot as plt
 
 
-def get_data(file):
-    """
-    reads text file line by line, gets lap no, laptime and distances
-
-    :param file: link to text file
-    :return: list of data (lap no, laptime and dist)
-    """
-
-    x = []
-
-    with open(file, 'r') as f:
-        for line in f.readlines():
-            if 'Lap' in line:
-                line = line.replace(" ", "").replace("\t", "").strip().split("=")
-
-                for index in range(0, len(line)):
-                    line[index] = "".join(i for i in line[index] if i.isnumeric())
-                x.append(line)
-    return analyse_data(x)
+log1 = cmerg.ERG('D:/UGRacing/UGR EV23/VD/CM data/20230615/230043.erg')
+log2 = cmerg.ERG('D:/UGRacing/UGR EV23/VD/CM data/20230615/225452.erg')
 
 
-def group_rows(x):
-    return x // 2
+for a in log1.signals:
+    print(a)
+
+print()
+# # print(log1.get('lapTime'))
+# #
+lap_times = log1.get('Car.Con.v')
+distance = log1.get('Car.Distance')
+
+car_dist = np.array(distance.samples)
+#
+t = np.array(lap_times.timestamps)
+spd = np.array(lap_times.samples)
+
+lap_times_aero = log2.get('Car.Con.v')
+distance_aero = log2.get('Car.Distance')
+car_dist_aero = np.array(distance_aero.samples)
+spd_aero = np.array(lap_times_aero.samples)
+
+side_acc = log1.get('Car.Con.ax_1')
+side_acc_aero = log2.get('Car.Con.ax_1')
+
+side_acc_data = np.array(side_acc.samples)
+side_acc_aero_data = np.array(side_acc_aero.samples)
 
 
-def analyse_data(x):
-    """
-    gets summary of data for speed and time, removes 1st lap
+fig, (ax1, ax2) = plt.subplots(2, 1)
 
-    :param x: data_list for given run
-    :return: describe of time and average speed
-    """
+ax1.plot(car_dist, spd)
+ax1.plot(car_dist_aero, spd_aero)
 
-    data = pd.DataFrame(x, columns=['Lap', 'Time', 'Dist', 'Dist 2'])
-    data[['Lap', 'Time', 'Dist', 'Dist 2']] = data[['Lap', 'Time', 'Dist', 'Dist 2']].apply(pd.to_numeric)
+ax1.set_xlabel('Lap dist, m')
+ax1.set_ylabel('Car speed, ms')
+ax1.legend(['CL=0.1', 'CL=-2.7, trim load 13kg'])
 
-    data = data.groupby(group_rows)[['Time', 'Dist', 'Dist 2']].agg('sum')
-    data[['Time', 'Dist', 'Dist 2']] = data[['Time', 'Dist', 'Dist 2']].div([1000, 10000, 10000]).round(3)
+ax2.plot(car_dist, side_acc_data)
+ax2.plot(car_dist_aero, side_acc_aero_data)
 
-    data.drop(index=data.index[0], axis=0, inplace=True)
+ax2.set_xlabel('lap dist, m')
+ax2.set_ylabel('long acc, m/s2')
+ax2.legend(['CL=0.1', 'CL=-2.7, trim load 13kg'])
 
-    data['Speed_ave'] = (data['Dist'] / data['Time']).round(3)
-
-    return data['Time'].describe(), data['Speed_ave'].describe()
+plt.show()
 
 
-for link in links:
-    print(get_data(link))
+#
+# fig, ax = plt.subplots()
+#
+# ax.plot(t, spd, linewidth=2.0)
+#
+# plt.show()
