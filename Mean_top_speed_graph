@@ -22,6 +22,8 @@ manual_legend = {'Final setup', 'Stock setup'};
 f = dir(fullfile(folder, '*.mat'));
 runs = {};
 times = {};
+mean_v = [];
+max_v = [];
 
 
 %// For each MAT file...
@@ -46,11 +48,14 @@ for idx = 1 : numel(f)
         times{length(times) + 1} = s.(['Time_' run])(1, end);
 
         mean_speed = (s.(['Lap_Dist_' run])(end))/(((s.(['Time_' run])(end)))+1);
+        mean_v(end+1) = mean_speed;
+        max_v(end+1) = max(s.(['Speed_' run]));
 
     %create graph
         markers = ['*', 'o', '^', '<', '+'];
 
-        scatter(mean_speed * 3.6, max(s.(['Speed_' run])), 18, "filled");
+        scatter(mean_speed * 3.6, max(s.(['Speed_' run])), 60, "filled");
+
         hold on
 
 end
@@ -63,10 +68,12 @@ y = ylabel('Lap top speed, kph', 'FontName', 'Serif');
 set(y, 'FontSize', 24)
 
 % ------------------------------ CHANGE AXES -----------------------------
-axis([200 240 290 310])
+axis([200 250 290 310])
 %-------------------------------------------------------------------------
 
 ax = gca;
+xline(mean(mean_v)*3.6,'-',{'Mean speed', string(round(mean(mean_v)*3.6,1))}, 'fontsize',14)
+yline(mean(max_v),'-', {'Top speed', string(round(mean(max_v), 1))}, 'fontsize',14)
 ax.FontSize = 16;
 ax.FontName = 'Serif';
 ax.LineWidth = 1.25;
