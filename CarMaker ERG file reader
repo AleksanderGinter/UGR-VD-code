@@ -78,12 +78,13 @@ def get_dataframe(link_data, value, laptimes):
 
     df = df.truncate(after=int(max(data_text['Dist'])))
 
-    key_data = (log1_text_file.split('/')[len(log1_text_file.split('/')) - 1][:-4]) + str(value_data)
-    key_text = (log1_text_file.split('/')[len(log1_text_file.split('/')) - 1][:-4])
+    key_data = (laptimes.split('/')[len(laptimes.split('/')) - 1][:-4]) + str(value)
+    key_text = (laptimes.split('/')[len(laptimes.split('/')) - 1][:-4])
+
     data_collected[key_data] = df
     data_collected[key_text] = data_text
 
     return df
 
 
-print(get_dataframe(log1, 'Tajm', log1_text_file))
+get_dataframe(log1, 'Time', log1_text_file)
