@@ -1,0 +1,110 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+# get y-data profiling
+
+data_summary = []
+links = ['D:/UGRacing/UGR EV23/VD/CM data/20230615/CL0_1.txt',
+         'D:/UGRacing/UGR EV23/VD/CM data/20230615/CL-2_7.txt']
+
+
+def get_data(file):
+    """
+    reads text file line by line, gets lap no, laptime and distances
+
+    :param file: link to text file
+    :return: list of data (lap no, laptime and dist)
+    """
+
+    x = []
+
+    with open(file, 'r') as f:
+        for line in f.readlines():
+            if 'Lap' in line:
+                line = line.replace(" ", "").replace("\t", "").strip().split("=")
+
+                for index in range(0, len(line)):
+                    line[index] = "".join(i for i in line[index] if i.isnumeric())
+                x.append(line)
+    return analyse_data(x)
+
+
+def group_rows(x):
+    '''
+    dont really use, only if lap is glitched
+    '''
+    return x // 2
+
+
+def analyse_data(x):
+    """
+    gets summary of data for speed and time, removes 1st lap
+
+    :param x: data_list for given run
+    :return: describe of time and average speed
+    """
+
+    data = pd.DataFrame(x, columns=['Lap', 'Time', 'Dist', 'Dist 2'])
+    data[['Lap', 'Time', 'Dist', 'Dist 2']] = data[['Lap', 'Time', 'Dist', 'Dist 2']].apply(pd.to_numeric)
+
+    data[['Time', 'Dist', 'Dist 2']] = data[['Time', 'Dist', 'Dist 2']].div([1000, 10000, 10000]).round(3)
+
+
+    data['Speed_ave'] = (data['Dist'] / data['Time']).round(3)
+
+    # return data['Time'].describe(), data['Speed_ave'].describe()
+    return data
+
+# get_data(links[0])['Time'].describe()
+# Get the angles from 0 to 2 pie (360 degree) in narray object
+# works -------------------------------------------------------------
+# fig, (ax1, ax2) = plt.subplots(2,1)
+#
+# plt.scatter(get_data(links[0]).index.to_numpy(), get_data(links[0])['Time'])
+# plt.plot(get_data(links[1]).index.to_numpy(), get_data(links[1])['Time'])
+# plt.ylabel('laptime, s')
+# plt.legend(['CL 0.1', 'CL -2.7, 13kg trim load'])
+# plt.show()
+# ax1.set_xlabel('Lap no')
+# ax1.set_ylabel('Laptime')
+#
+# ax2.plot(get_data(links[1]).index.to_numpy(), get_data(links[1])['Time'], 'r')
+# ax2.set_xlabel('Lap no')
+# ax2.set_ylabel('Laptime')
+#
+# plt.subplots_adjust(hspace=0.5)
+#
+# plt.show()
+
+# SAME PLOT CODE --------------------------------------------
+
+# fig, ax = plt.subplots()
+#
+#
+# ax.plot(get_data(links[0]).index.to_numpy(), get_data(links[0])['Time'], label='Slower learning rate')
+#
+# ax2 = ax.twinx()
+# ax2.plot(get_data(links[1]).index.to_numpy(), get_data(links[1])['Time'], 'r', label='Faster learning rate')
+#
+#
+# ax.set_xlabel('Lap no')
+# ax.set_ylabel('Laptime')
+#
+# ax.legend(loc='upper left')
+# ax2.legend(loc='upper right')
+#
+# plt.show()
+
+
+# BS CODE --------------------------------------------------------
+# get_data(links[1]).hist(column='Time', bins=50, range=[7.6, 8.5])
+# plt.show()
+# #
+# #
+# x = get_data(links[0])['Time']
+# y = get_data(links[1])['Time']
+# print(y)
+# bins = np.linspace(76, 82, 200)
+# plt.hist([x, y], bins, label=['CL = -0.6', 'CL = -2.5'])
+# plt.legend(loc='upper right')
+# plt.show()
