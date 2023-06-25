@@ -1,61 +1,89 @@
 import cmerg
 import pandas as pd
 import numpy as np
+from Pandas import script_text
 import matplotlib.pyplot as plt
+from scipy.spatial import ConvexHull
+
+log1 = 'D:/UGRacing/UGR EV23/VD/CM data/20230622/180935.erg'
+log1_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/20230622/data.txt'
 
 
-log1 = cmerg.ERG('D:/UGRacing/UGR EV23/VD/CM data/20230615/230043.erg')
-log2 = cmerg.ERG('D:/UGRacing/UGR EV23/VD/CM data/20230615/225452.erg')
+data_collected = {}
+
+# for t in log1.signals:
+#     print(t)
 
 
-for a in log1.signals:
-    print(a)
-
-print()
 # # print(log1.get('lapTime'))
 # #
-lap_times = log1.get('Car.Con.v')
-distance = log1.get('Car.Distance')
-
-car_dist = np.array(distance.samples)
+# time = log1.get('Time')
+# time_lap = time.samples
 #
-t = np.array(lap_times.timestamps)
-spd = np.array(lap_times.samples)
-
-lap_times_aero = log2.get('Car.Con.v')
-distance_aero = log2.get('Car.Distance')
-car_dist_aero = np.array(distance_aero.samples)
-spd_aero = np.array(lap_times_aero.samples)
-
-side_acc = log1.get('Car.Con.ax_1')
-side_acc_aero = log2.get('Car.Con.ax_1')
-
-side_acc_data = np.array(side_acc.samples)
-side_acc_aero_data = np.array(side_acc_aero.samples)
-
-
-fig, (ax1, ax2) = plt.subplots(2, 1)
-
-ax1.plot(car_dist, spd)
-ax1.plot(car_dist_aero, spd_aero)
-
-ax1.set_xlabel('Lap dist, m')
-ax1.set_ylabel('Car speed, ms')
-ax1.legend(['CL=0.1', 'CL=-2.7, trim load 13kg'])
-
-ax2.plot(car_dist, side_acc_data)
-ax2.plot(car_dist_aero, side_acc_aero_data)
-
-ax2.set_xlabel('lap dist, m')
-ax2.set_ylabel('long acc, m/s2')
-ax2.legend(['CL=0.1', 'CL=-2.7, trim load 13kg'])
-
-plt.show()
-
-
+# car_speed = log1.get('Car.Con.v')
+# distance = log1.get('Car.Distance')
 #
-# fig, ax = plt.subplots()
+# car_dist = np.array(distance.samples)
+# #
+# t = np.array(car_speed.timestamps)
+# spd = np.array(car_speed.samples)
 #
-# ax.plot(t, spd, linewidth=2.0)
-#
-# plt.show()
+# data_df_no_aero = {'Distance': car_dist, 'Lap0': time_lap}
+
+
+def get_dataframe(link_data, value, laptimes):
+
+    # todo consider dropping lap 0 column at the end
+    """
+    gets data from a linked CM file and return a dataframe with columns sorted as laps w.r.t distance
+        function writes data as dataframes to the 'data_collected' dictionary, with keys as the name of the text file
+        for the text file and text file name + value for the ERG file
+
+    :param link_data: link to the ERG carmaker file
+    :param value: value that wants to be researched, MUST be in signals
+    :param laptimes: link to the text file with lap distances and times
+
+    :return: dataframe with ERG data
+    """
+
+    # get data from CM ERG file
+    log = cmerg.ERG(link_data)
+
+    if value not in log.signals:
+        raise ValueError("Value prompted not in ERG signals list")
+
+    dist = np.array(log.get('Car.Distance').samples)
+    value_data = np.array(log.get(str(value)).samples)
+
+    # get data to FD, average over a meter, drop duplicates
+    df = pd.DataFrame({'Distance': dist, 'Lap0': value_data})
+    df['Distance'] = df['Distance'].astype(int)
+    df.set_index('Distance', inplace=True)
+    df['Lap0'] = df.groupby('Distance')['Lap0'].mean()
+    df.drop_duplicates(inplace=True)
+
+    # read text file data
+    data_text = script_text.get_data(laptimes)
+
+    # split columns
+    for i in range(0, len(data_text)):
+        dist_start_lap = int(data_text[0:i]['Dist'].sum())
+        dist_end_lap = int(data_text[0:i + 1]['Dist'].sum())
+        df['Lap{}'.format(i + 1)] = df.iloc[dist_start_lap:dist_end_lap]['Lap0'].reset_index(drop=True) \
+                                    - df['Lap0'][dist_start_lap]
+
+    df['Mean'] = df.iloc[:, 2:].mean(axis=1)
+    df['Median'] = df.iloc[:, 2:].median(axis=1)
+    df['Sigma'] = df.iloc[:, 2:].std(axis=1)
+
+    df = df.truncate(after=int(max(data_text['Dist'])))
+
+    key_data = (log1_text_file.split('/')[len(log1_text_file.split('/')) - 1][:-4]) + str(value_data)
+    key_text = (log1_text_file.split('/')[len(log1_text_file.split('/')) - 1][:-4])
+    data_collected[key_data] = df
+    data_collected[key_text] = data_text
+
+    return df
+
+
+print(get_dataframe(log1, 'Tajm', log1_text_file))
