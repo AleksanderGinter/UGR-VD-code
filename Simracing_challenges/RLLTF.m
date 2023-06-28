@@ -84,7 +84,7 @@ for idx = 1 : numel(f)
         s.(['Speed_' run]) = round(mean(reshape(s.(['Speed_' run])(1:new_size), no_sampl, [])));
 
     %create graph
-        markers = ['', '', '^', '<', '+'];
+        markers = ['o', 'diamonc', '^', '<', '+'];
 
 %         patch(s.(['Lap_Dist_' run]), s.(['RLTF_' run]), s.(['Speed_' run]), 'FaceColor', 'none', 'EdgeColor', 'interp', 'LineWidth', 1.5) % 'Marker', markers(idx), 
 %         scatter(s.(['Lap_Dist_' run]), s.(['LTF_' run]),18, s.(['Speed_' run]), markers(idx));
