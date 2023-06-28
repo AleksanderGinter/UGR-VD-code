@@ -7,7 +7,7 @@ s = struct();
 % number of consecutive values that are averaged
 % basically number of ms (miliseconds)
 no_sampl = 1000;
-CoG = 0.475;
+CoG = 0.457;
 
 % get your path to the folder where the runs are saved
 folder = 'D:\UGRacing\UGR EV23\VD\Challenge4';
@@ -53,18 +53,18 @@ for idx = 1 : numel(f)
         times{length(times) + 1} = s.(['Time_' run])(1, end);
 
     % get load diff on tires, left - right tires
-        s.(['L_front_' run]) = (s.(['Tire_Load_FL_' run]) - s.(['Tire_Load_FR_' run]));
-        s.(['L_rear_' run]) = (s.(['Tire_Load_RL_' run]) - s.(['Tire_Load_RR_' run]));
+        s.(['L_front_' run]) = abs((s.(['Tire_Load_FL_' run]) - s.(['Tire_Load_FR_' run])));
+        s.(['L_rear_' run]) = abs((s.(['Tire_Load_RL_' run]) - s.(['Tire_Load_RR_' run])));
 
     % get rate of load transfer on axles
 
     for i = 1:numel(s.(['L_front_' run]))-1
-        s.(['RL_front_' run])(i) = (s.(['L_front_' run])(i+1) - s.(['L_front_' run])(i));% ./ (no_sampl/1000);
-        s.(['RL_rear_' run])(i) = (s.(['L_rear_' run])(i+1) - s.(['L_rear_' run])(i));% ./ (no_sampl/1000);
+        s.(['RL_front_' run])(i) = abs((s.(['L_front_' run])(i+1) - s.(['L_front_' run])(i))) ./ (no_sampl/1000);
+        s.(['RL_rear_' run])(i) = abs((s.(['L_rear_' run])(i+1) - s.(['L_rear_' run])(i))) ./ (no_sampl/1000);
 
     end
     % Rate of Front load transfer, % ((Front DIFF) / (Front DIFF + Rear DIFF))
-        s.(['RLTF_' run]) = CoG - (s.(['RL_front_' run])  ./ ( s.(['RL_front_' run]) + s.(['RL_rear_' run])));
+        s.(['RLTF_' run]) = (CoG - (s.(['RL_front_' run])  ./ ( s.(['RL_front_' run]) + s.(['RL_rear_' run])))) .* 100;
 
         balance{idx} = round(sum(s.(['RLTF_' run]))/ length(s.(['RLTF_' run])), 3);
 
@@ -86,9 +86,9 @@ for idx = 1 : numel(f)
     %create graph
         markers = ['', '', '^', '<', '+'];
 
-        patch(s.(['Lap_Dist_' run]), s.(['RLTF_' run]), s.(['Speed_' run]), 'FaceColor', 'none', 'EdgeColor', 'interp', 'LineWidth', 1.5) % 'Marker', markers(idx), 
+%         patch(s.(['Lap_Dist_' run]), s.(['RLTF_' run]), s.(['Speed_' run]), 'FaceColor', 'none', 'EdgeColor', 'interp', 'LineWidth', 1.5) % 'Marker', markers(idx), 
 %         scatter(s.(['Lap_Dist_' run]), s.(['LTF_' run]),18, s.(['Speed_' run]), markers(idx));
-%         plot(s.(['Lap_Dist_' run]), s.(['DIFF_TSA_' run]), 'LineWidth', 0.75)
+        plot(s.(['Lap_Dist_' run]), s.(['RLTF_' run]), 'LineWidth', 0.75)% 'Marker', markers(idx))
         colormap jet
         hold on
 
@@ -114,14 +114,14 @@ ax = gca;
 ax.FontSize = 16;
 ax.FontName = 'Serif';
 ax.LineWidth = 1.25;
-h = colorbar;
-ylabel(h, 'Car speed, kph', 'FontSize', 20)
+% h = colorbar;
+% ylabel(h, 'Car speed, kph', 'FontSize', 20)
 
-legend_strings = string(manual_legend) + '; Laptime: ' + string(times) + '; Mean RLLTF, %: ' + string(balance);
+legend_strings = string(runs) + '; Laptime: ' + string(times) + '; Mean RLLTF:' + string(balance);
 % for i = 1:idx
 %     L(i) = plot(nan, nan, ['b' markers(i)]);
 % end
-leg = legend(legend_strings);
-set(leg, 'Interpreter', 'none', 'FontSize', 16);
+leg = legend( legend_strings);
+set(leg, 'Interpreter', 'none', 'FontSize', 16, 'Location', 'northwest');
 hold off
 
