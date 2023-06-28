@@ -23,7 +23,7 @@ f = dir(fullfile(folder, '*.mat'));
 runs = {};
 times = {};
 balance = {};
-
+CoG = 0.457;
 
 %// For each MAT file...
 for idx = 1 : numel(f)
@@ -53,11 +53,11 @@ for idx = 1 : numel(f)
 
     % stitching the values together
     % get load diff on tires, left - right tires
-        s.(['L_front_' run]) = (s.(['Tire_Load_FL_' run]) - s.(['Tire_Load_FR_' run]));
-        s.(['L_rear_' run]) = (s.(['Tire_Load_RL_' run]) - s.(['Tire_Load_RR_' run]));
+        s.(['L_front_' run]) = abs((s.(['Tire_Load_FL_' run]) - s.(['Tire_Load_FR_' run])));
+        s.(['L_rear_' run]) = abs((s.(['Tire_Load_RL_' run]) - s.(['Tire_Load_RR_' run])));
     
     % Front load transfer, % ((Front DIFF) / (Front DIFF + Rear DIFF))
-        s.(['LTF_' run]) = s.(['L_front_' run])  ./ ( s.(['L_front_' run]) + s.(['L_rear_' run]));
+        s.(['LTF_' run]) = 100*CoG - s.(['L_front_' run])  ./ ( s.(['L_front_' run]) + s.(['L_rear_' run])) .* 100;
 
         balance{idx} = round(sum(s.(['LTF_' run]))/ length(s.(['LTF_' run])), 3);
 
@@ -100,7 +100,7 @@ y = ylabel('LLTF, %', 'FontName', 'Serif');
 set(y, 'FontSize', 24)
 
 % ------------------------------ CHANGE AXES -----------------------------
-axis([0 7000 -5 5])
+% axis([0 7000 -5 5])
 %-------------------------------------------------------------------------
 
 ax = gca;
