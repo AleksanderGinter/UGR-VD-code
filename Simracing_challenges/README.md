@@ -16,7 +16,8 @@ To get the data ready, go to MoTeC and do the following:
 Once you get the data, specify the path to to the folder with data in matlab script. You can do that by going to that folder in the Windows file explorer -> right click the folder address (bar above the the files) and copy it as a text. Paste that into the MATLAB script.
 
 **Adjustments in the scripts that will affect the graph plot.**
-- Legend captions can be done manually of automatically (defaults to the run name). The legend handle in the last part of the script needs to be changed from strings(manual_legens) to string(runs) or vice versa.
+- *Graphs include averaging* - the value is an average of values from a number of samples. For 1000Hz sampling rate, it is equivalent to ms passed. I recommend keeping it between 200 and 500 for most applications.
+- Legend captions can be done manually or automatically (defaults to the run name). The legend handle in the last part of the script needs to be changed from strings(manual_legens) to string(runs) or vice versa.
 - The patch object is a 3D object that is used to graph data onto a 2D (x-y) plane. This allows for it to have a colorline, based on an external value (such as speed or throttle/brake).
   Unfortunately, it will create a line connecting the 1st and the last data point. I haven't found solution to that, so it just comes with it.
 - Sometimes it is more useful to have a regular 2D plot graph, so in some cases the command is there in the script - just uncomment it.
