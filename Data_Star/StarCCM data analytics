@@ -3,17 +3,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# get y-data profiling
 
 
-links = ['D:/UGRacing/UGR EV23/VD/aero_data_Nev/correct_data/sim6_6ms.txt',
-         'D:/UGRacing/UGR EV23/VD/aero_data_Nev/correct_data/sim6_8ms.txt',
-         'D:/UGRacing/UGR EV23/VD/aero_data_Nev/correct_data/sim6_10ms.txt',
-         'D:/UGRacing/UGR EV23/VD/aero_data_Nev/correct_data/sim6_12ms.txt',
-         'D:/UGRacing/UGR EV23/VD/aero_data_Nev/correct_data/sim6_14ms.txt',
-         'D:/UGRacing/UGR EV23/VD/aero_data_Nev/correct_data/sim6_16ms.txt',
-         'D:/UGRacing/UGR EV23/VD/aero_data_Nev/correct_data/sim6_18ms.txt',
-         ]
+links = []
 
 # used as keys for sim cad version and speed of the flow
 runs = []
