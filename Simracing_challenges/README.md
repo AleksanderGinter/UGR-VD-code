@@ -22,6 +22,6 @@ Once you get the data, specify the path to to the folder with data in matlab scr
   Unfortunately, it will create a line connecting the 1st and the last data point. I haven't found solution to that, so it just comes with it.
 - Sometimes it is more useful to have a regular 2D plot graph, so in some cases the command is there in the script - just uncomment it.
 - Remember to change axes range around line 100, otherwise the graph may be clipped.
+- Data series is clipped at the end to match the array sizes (and be possible to graph) so don't be surprised if the laps are slightly shorter.
 
-
-All should be ready to get some graphs :)
+- GG plots and acceleration-speed plots are based on convex hull shapes. The latter also have the option to clip graphing values below a certain threshold of speed and acceleration to filter sub tyre grip limit data.
