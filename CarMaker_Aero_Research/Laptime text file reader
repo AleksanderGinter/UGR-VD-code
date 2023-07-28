@@ -1,0 +1,54 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+data_summary = []
+
+
+def get_data(file):
+    """
+    reads text file line by line, gets lap no, laptime and distances
+
+    :param file: link to text file
+    :return: list of data (lap no, laptime and dist)
+    """
+
+    x = []
+
+    with open(file, 'r') as f:
+        for line in f.readlines():
+            if 'Lap' in line:
+                line = line.replace(" ", "").replace("\t", "").strip().split("=")
+
+                for index in range(0, len(line)):
+                    line[index] = "".join(i for i in line[index] if i.isnumeric())
+                x.append(line)
+    return analyse_data(x)
+
+
+def group_rows(x):
+    """ 
+    don't really use, only if lap is glitched and every nth lap is 0.001s long or sth
+    """
+    return x // 2
+
+
+def analyse_data(x):
+    """
+    gets summary of data for speed and time, removes 1st lap
+
+    :param x: data_list for given run
+    :return: describe of time and average speed
+    """
+
+    data = pd.DataFrame(x, columns=['Lap', 'Time', 'Dist', 'Dist 2'])
+    data[['Lap', 'Time', 'Dist', 'Dist 2']] = data[['Lap', 'Time', 'Dist', 'Dist 2']].apply(pd.to_numeric)
+
+    data[['Time', 'Dist', 'Dist 2']] = data[['Time', 'Dist', 'Dist 2']].div([1000, 10000, 10000]).round(3)
+
+
+    data['Speed_ave'] = (data['Dist'] / data['Time']).round(3)
+
+    return data
+
