@@ -15,8 +15,8 @@ To get the data ready, go to MoTeC and do the following:
 
 Once you get the data, specify the path to to the folder with data in matlab script. You can do that by going to that folder in the Windows file explorer -> right click the folder address (bar above the the files) and copy it as a text. Paste that into the MATLAB script.
 
-For the scripts themselves, there are couple adjusting variables that will affect the graph plot.
-- 
+Adjustments in the scripts that will affect the graph plot.
+- Legend captions can be done manually of automatically (defaults to the run name). The legend handle in the last part of the script needs to be changed from strings(manual_legens) to string(runs) or vice versa.
 Remember to change axes range (around) on line 97, otherwise the graph may be clipped.
 
 
