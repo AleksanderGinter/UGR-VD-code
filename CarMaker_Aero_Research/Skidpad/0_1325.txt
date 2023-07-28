@@ -1,0 +1,45 @@
+SIM_START		test_run_FSUK	2023-07-17 21:38:37
+  Time	0.000
+SIMULATE		test_run_FSUK
+		
+  Time	6.795
+		Lap   1: t=   6.794s	Dist=57.2029m	sRoad=0.9257m
+  Time	11.940
+		Lap   2: t=   5.145s	Dist=57.0005m	sRoad=0.9331m
+  Time	17.087
+		Lap   3: t=   5.147s	Dist=57.0648m	sRoad=0.9299m
+  Time	22.221
+		Lap   4: t=   5.134s	Dist=56.9739m	sRoad=0.9317m
+  Time	27.351
+		Lap   5: t=   5.130s	Dist=56.9332m	sRoad=0.9327m
+  Time	32.475
+		Lap   6: t=   5.124s	Dist=56.9024m	sRoad=0.9305m
+  Time	37.600
+		Lap   7: t=   5.125s	Dist=56.9102m	sRoad=0.9317m
+  Time	42.725
+		Lap   8: t=   5.125s	Dist=56.9033m	sRoad=0.9271m
+  Time	47.850
+		Lap   9: t=   5.125s	Dist=56.9124m	sRoad=0.9315m
+  Time	52.974
+		Lap  10: t=   5.124s	Dist=56.9033m	sRoad=0.9286m
+  Time	58.098
+		Lap  11: t=   5.124s	Dist=56.9062m	sRoad=0.9289m
+  Time	63.222
+		Lap  12: t=   5.124s	Dist=56.9059m	sRoad=0.9292m
+  Time	68.347
+		Lap  13: t=   5.125s	Dist=56.9082m	sRoad=0.9309m
+  Time	73.472
+		Lap  14: t=   5.125s	Dist=56.9105m	sRoad=0.9338m
+  Time	78.597
+		Lap  15: t=   5.125s	Dist=56.9080m	sRoad=0.9326m
+  Time	83.721
+		Lap  16: t=   5.124s	Dist=56.9017m	sRoad=0.9289m
+  Time	88.846
+		Lap  17: t=   5.125s	Dist=56.9125m	sRoad=0.9339m
+  Time	93.970
+		Lap  18: t=   5.124s	Dist=56.8976m	sRoad=0.9263m
+  Time	99.095
+		Lap  19: t=   5.125s	Dist=56.9127m	sRoad=0.9306m
+  Time	104.219
+		Lap  20: t=   5.124s	Dist=56.9072m	sRoad=0.9315m
+		Driver results: event 1 (t= 104.219s, s= 1138.79m)
