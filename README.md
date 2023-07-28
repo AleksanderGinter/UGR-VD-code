@@ -1,6 +1,6 @@
-# UGR-VD-code
+# UGR VD and Aero code
 
-Welcome to VD data processing!
+Welcome to UGR code used for 
 
 How to get Tire Slip Angles graph:
 
