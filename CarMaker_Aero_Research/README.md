@@ -15,4 +15,4 @@ get_dataframe(link to ERG file, quantity desired, link to time-dist text file)['
 The ERG file reader *get_dataframe* rounds down the logged sample's distance to the nearest metre and then averages values in this distance window. The dataframe created has an index of a lap distance and columns (series) of data from all laps, named with the lap number. Data in columns are normalised to the start of the lap.
 The dataframe also has statistics series, such as Mean, Median, Standard Deviation and Standard Error. These values are calculated from the last 5 laps by default and can be changed in the get_dataframe function.
 
-Data I used for the research are available on Teams and the link is provided in the _Data used for research_ file.
+Data I used for the research and CM car files are available on Teams - the link is provided in the _Data used for research_ file.
