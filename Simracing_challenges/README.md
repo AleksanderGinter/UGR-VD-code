@@ -24,4 +24,4 @@ Once you get the data, specify the path to to the folder with data in matlab scr
 - Remember to change axes range around line 100, otherwise the graph may be clipped.
 - Data series is clipped at the end to match the array sizes (and be possible to graph) so don't be surprised if the laps are slightly shorter.
 
-- GG plots and acceleration-speed plots are based on convex hull shapes. The latter also have the option to clip graphing values below a certain threshold of speed and acceleration to filter sub tyre grip limit data.
+- GG plots and acceleration-speed plots are based on convex hull shapes. The latter also have the option to clip graphing values below a certain threshold of speed and acceleration to filter sub tyre grip limit data. They also provide a way to scatter points of data, with an option to plot every n-th point.
