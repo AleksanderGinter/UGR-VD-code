@@ -3,36 +3,35 @@ import pandas as pd
 import numpy as np
 from Pandas import script_text
 import matplotlib.pyplot as plt
+import os
+import matplotlib.colors as colors
+import matplotlib.cm as cmx
 from scipy.spatial import ConvexHull
-
-log1 = 'D:/UGRacing/UGR EV23/VD/CM data/20230622/180935.erg'
-log1_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/20230622/data.txt'
+import glob
 
 
+# ******************************************* READ FIRST *********************************************
+
+# for some reason, the data does not align perfectly, thus in plots code there is an option to shift data manually
+# the data series is shifted by changing the value of x-axis, use integers
+# example graphs code is included below the functions block, simply uncomment and change the paths to data files
+# ****************************************************************************************************
+
+# change the path to the folder with data to get signals list
+
+log1 = 'D:/UGRacing/UGR EV23/VD/CM data/Same_LD/300_24.erg'
+log1_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Same_LD/300_24.txt'
+
+
+for t in cmerg.ERG(log1).signals:
+    print(t)
+
+
+# can be used to store the dataframes
 data_collected = {}
-
-# for t in log1.signals:
-#     print(t)
-
-
-# # print(log1.get('lapTime'))
-# #
-# time = log1.get('Time')
-# time_lap = time.samples
-#
-# car_speed = log1.get('Car.Con.v')
-# distance = log1.get('Car.Distance')
-#
-# car_dist = np.array(distance.samples)
-# #
-# t = np.array(car_speed.timestamps)
-# spd = np.array(car_speed.samples)
-#
-# data_df_no_aero = {'Distance': car_dist, 'Lap0': time_lap}
 
 
 def get_dataframe(link_data, value, laptimes):
-
     # todo consider dropping lap 0 column at the end
     """
     gets data from a linked CM file and return a dataframe with columns sorted as laps w.r.t distance
@@ -69,12 +68,18 @@ def get_dataframe(link_data, value, laptimes):
     for i in range(0, len(data_text)):
         dist_start_lap = int(data_text[0:i]['Dist'].sum())
         dist_end_lap = int(data_text[0:i + 1]['Dist'].sum())
-        df['Lap{}'.format(i + 1)] = df.iloc[dist_start_lap:dist_end_lap]['Lap0'].reset_index(drop=True) \
+        if value != 'Time':
+            df['Lap{}'.format(i + 1)] = df.iloc[dist_start_lap:dist_end_lap]['Lap0'].reset_index(drop=True)
+        else:
+            df['Lap{}'.format(i + 1)] = df.iloc[dist_start_lap:dist_end_lap]['Lap0'].reset_index(drop=True) \
                                     - df['Lap0'][dist_start_lap]
 
-    df['Mean'] = df.iloc[:, 2:].mean(axis=1)
-    df['Median'] = df.iloc[:, 2:].median(axis=1)
-    df['Sigma'] = df.iloc[:, 2:].std(axis=1)
+
+        # averages from last 20 laps
+    df['Mean'] = df.iloc[:, -5:].mean(axis=1)
+    df['Median'] = df.iloc[:, -5:].median(axis=1)
+    df['Sigma'] = df.iloc[:, -5:].std(axis=1)
+    df['StandardError'] = df['Sigma'] / np.sqrt(5)
 
     df = df.truncate(after=int(max(data_text['Dist'])))
 
@@ -87,4 +92,496 @@ def get_dataframe(link_data, value, laptimes):
     return df
 
 
-get_dataframe(log1, 'Time', log1_text_file)
+# print(script_text.get_data(log1_text_file))
+
+def TSA(link_data, text_data):
+    """
+    Gets average Tire Slip Angle of the car and MDfOB, useful for the legend
+    :param link_data: link to CM ERG file
+    :param text_data: link to text file with data
+    :return: tuple: dataframe of mean values of TSA; string value of mean deviation from optimum balance
+    """
+    TSA_FL = get_dataframe(link_data, 'Car.SlipAngleFL', text_data)['Mean']
+    TSA_FR = get_dataframe(link_data, 'Car.SlipAngleFR', text_data)['Mean']
+    TSA_RL = get_dataframe(link_data, 'Car.SlipAngleRL', text_data)['Mean']
+    TSA_RR = get_dataframe(link_data, 'Car.SlipAngleRR', text_data)['Mean']
+
+    AVE_TSA_F = (np.abs(TSA_FR) + np.abs(TSA_FL)) / 2
+    AVE_TSA_R = (np.abs(TSA_RR) + np.abs(TSA_RL)) / 2
+
+    DIFF_TSA = np.rad2deg(AVE_TSA_F) - np.rad2deg(AVE_TSA_R)
+    balance = sum(DIFF_TSA[:-1]) / len(DIFF_TSA)
+
+    key_text = 'M.D.f.O.B: {0:.3f}'.format(balance)
+
+    return DIFF_TSA, key_text
+
+
+def Slip_Ratio(link_data, text_data):
+    """
+    Gets average Tire Slip Angle of the car
+    :param link_data: link to CM ERG file
+    :param text_data: link to text file with data
+    :return: tuple dataframes of average slip ratio of front and rear
+    """
+    SR_FL = get_dataframe(link_data, 'Car.LongSlipFL', text_data)['Mean']
+    SR_FR = get_dataframe(link_data, 'Car.LongSlipFR', text_data)['Mean']
+    SR_RL = get_dataframe(link_data, 'Car.LongSlipRL', text_data)['Mean']
+    SR_RR = get_dataframe(link_data, 'Car.LongSlipRR', text_data)['Mean']
+
+    AVE_SR_F = np.rad2deg((np.abs(SR_FR) + np.abs(SR_FL)) / 2)
+    AVE_SR_R = np.rad2deg((np.abs(SR_RR) + np.abs(SR_RL)) / 2)
+
+    # can be adapted to use mean slip ratio over a lap
+    # key_text = (text_data.split('/')[len(text_data.split('/')) - 1][:-7]) + ' N DF; L/D: ' + str(
+    #     float((text_data.split('/')[len(text_data.split('/')) - 1][-6:-4])) / 10) + '; M.D.f.O.B: {0:.3f}'.format(
+    #     balance)
+
+    return AVE_SR_F, AVE_SR_R
+
+
+def FLLD(link_data, text_data):
+    """
+    Gets average front lateral load distribution and mean value over a lap (useful for the legend)
+    :param link_data:
+    :param text_data:
+    :return: tuple: dataframe of meand values of FLLD; string value of mean FLLD
+    """
+    Load_FL = get_dataframe(link_data, 'Car.FzFL', text_data)['Mean']
+    Load_FR = get_dataframe(link_data, 'Car.FzFR', text_data)['Mean']
+    Load_RL = get_dataframe(link_data, 'Car.FzRL', text_data)['Mean']
+    Load_RR = get_dataframe(link_data, 'Car.FzRR', text_data)['Mean']
+
+    TL_F = np.abs(Load_FL - Load_FR)
+    TL_R = np.abs(Load_RL - Load_RR)
+
+    FLL_Distr = TL_F / (TL_F + TL_R)
+
+    balance = sum(FLL_Distr[:-1]) / (len(FLL_Distr-1))
+
+    key_text = 'Mean FLLD, %: {0:.1f}'.format(balance*100)
+
+    return FLL_Distr, key_text
+
+
+def DELTA(link_data_baseline, text_data_baseline, link_data2, text_data2):
+    """
+    Calculate the delta (variance) during the laptime
+
+    :param link_data_baseline: baseline lap ERG file link
+    :param text_data_baseline: baseline lap text file link with lap distnaces and times
+    :param link_data2: investigated lap ERG file link
+    :param text_data2: investigated lap text file link with lap distnaces and times
+    :return: elementwise difference between time at a given track distance, np array
+    """
+    baseline = get_dataframe(link_data_baseline, 'Time', text_data_baseline)['Mean']
+    lap_investigated = get_dataframe(link_data2, 'Time', text_data2)['Mean']
+    baseline_error = get_dataframe(link_data_baseline, 'Time', text_data_baseline)['StandardError']
+    lap_investigated_error = get_dataframe(link_data2, 'Time', text_data2)['StandardError']
+
+    # get the same length
+    lap_investigated = lap_investigated[:len(baseline)]
+    baseline = baseline[:len(lap_investigated)]
+
+    lap_investigated_error = lap_investigated_error[:len(baseline)]
+    baseline_error = baseline_error[:len(lap_investigated)]
+
+    return np.subtract(np.array(lap_investigated), np.array(baseline)), 1.96*(lap_investigated_error + baseline_error)
+
+
+def TopMeanSpeed(link_data, laptimes):
+    """
+    gets top and mean speed values
+    :param link_data: baseline lap ERG file link
+    :param laptimes: baseline lap text file link with lap distnaces and times
+    :return: tuple of numeric values of top and means speeds
+    """
+
+    last_index = get_dataframe(link_data, 'Time', laptimes).index[-1]
+
+    top_speed = max((get_dataframe(link_data, 'Car.Con.v', laptimes)['Mean']))
+    mean_speed = last_index / get_dataframe(link_data, 'Time', laptimes)['Mean'].iloc[last_index]
+
+    return top_speed, mean_speed
+
+
+
+# BOXPLOT of laptimes of a config in a folder -----------------------------------------------------------------
+
+# folder_path = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/'
+#
+# text_file_names = []
+#
+# for file_name in os.listdir(folder_path):
+#     if file_name.endswith('.txt'):
+#         text_file_names.append(file_name[:-4])
+#
+#
+# data_for_box = []
+# label = []
+# a = np.arange(len(text_file_names))
+# # Print the text file names
+# for file_name in text_file_names:
+#     print(file_name)
+#
+#
+# for i in text_file_names:
+#     data_for_box.append(script_text.get_data(folder_path + i +'.txt')['Time'])
+#     label.append('DF, N: ' + i)
+#
+# bp = plt.boxplot(data_for_box, positions=np.array(a), labels=label, showbox=False, showcaps=False, showfliers=False)
+#
+#
+# for element in bp['medians']:
+#     element.set_linewidth(2.5)
+# for element in bp['boxes']:
+#     element.set_linewidth(2.5)
+# for element in bp['whiskers']:
+#     element.set_linewidth(2.5)
+# for element in bp['caps']:
+#     element.set_linewidth(2.5)
+#
+# plt.ylim(ymax = 5, ymin = 4)
+# plt.xticks(rotation=45, ha='right', fontsize=15)
+# plt.minorticks_on()
+# plt.xlabel('Car Downforce, N',fontsize=20)
+# plt.ylabel('FSUK Acceleration run time, s', fontsize=20)
+# plt.yticks(fontsize=20)
+# plt.xticks(fontsize=20)
+#
+# ax = plt.gca()
+# ax.tick_params(axis='y', which='major', length=7, width=2.5)
+# ax.tick_params(axis='y', which='minor', length=5, width=2)
+# ax.tick_params(axis='x', which='major', length=7, width=2.5)
+# ax.tick_params(axis='x', which='minor', length=0, width=2)
+#
+#
+# # Set the linewidth of the axes spines
+# ax.spines['bottom'].set_linewidth(2.5)
+# ax.spines['left'].set_linewidth(2.5)
+#
+#
+# plt.show()
+
+
+# convex hull for g-g plot -------------------------------------------------------------------------------
+
+# log1 = 'D:/UGRacing/UGR EV23/VD/CM data/20230715/0.erg'
+# log1_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/20230715/0.txt'
+#
+# log2 = 'D:/UGRacing/UGR EV23/VD/CM data/20230715/200.erg'
+# log2_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/20230715/200.txt'
+#
+# log3 = 'D:/UGRacing/UGR EV23/VD/CM data/20230715/300.erg'
+# log3_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/20230715/300.txt'
+#
+#
+# points = np.column_stack((get_dataframe(log1, 'Car.ay', log1_text_file)['Mean'],
+#                          get_dataframe(log1, 'Car.ax', log1_text_file)['Mean']))
+#
+# hull = ConvexHull(points[:-2])
+#
+# for simplex in hull.simplices:
+#     plt.plot(np.array(points[simplex, 0]), np.array(points[simplex, 1]), c='g', linewidth=2)
+#
+#
+# points = np.column_stack((get_dataframe(log2, 'Car.ay', log2_text_file)['Mean'],
+#                          get_dataframe(log2, 'Car.ax', log2_text_file)['Mean']))
+#
+# hull = ConvexHull(points[:-2])
+#
+# for simplex in hull.simplices:
+#     plt.plot(np.array(points[simplex, 0]), np.array(points[simplex, 1]), c='b', linewidth=2)
+#
+# points = np.column_stack((get_dataframe(log3, 'Car.ay', log3_text_file)['Mean'],
+#                          get_dataframe(log3, 'Car.ax', log3_text_file)['Mean']))
+#
+# hull = ConvexHull(points[:-2])
+#
+# for simplex in hull.simplices:
+#     plt.plot(np.array(points[simplex, 0]), np.array(points[simplex, 1]), c='red', linewidth=2)
+#
+# plt.minorticks_on()
+# plt.xlabel('Lateral acceleration, ms$^{-2}$',fontsize=20)
+# plt.ylabel('Longitudinal acceleration, ms$^{-2}$', fontsize=20)
+# plt.yticks(fontsize=20)
+# plt.xticks(fontsize=20)
+#
+# #
+# ax = plt.gca()
+# ax.tick_params(axis='y', which='major', length=7, width=2.5)
+# ax.tick_params(axis='y', which='minor', length=5, width=2)
+# ax.tick_params(axis='x', which='major', length=7, width=2.5)
+# ax.tick_params(axis='x', which='minor', length=5, width=2)
+# ax.spines['bottom'].set_linewidth(2.5)
+# ax.spines['left'].set_linewidth(2.5)
+# plt.legend(['0 N DF', '200 N DF', '300 N DF'], fontsize=20)
+#
+# leg = ax.get_legend()
+# leg.legendHandles[0].set_color('green')
+# leg.legendHandles[1].set_color('blue')
+# leg.legendHandles[2].set_color('red')
+# plt.show()
+
+
+# acceleration diff over a lap ----------------------------------------------------------
+
+# log1 = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/0_1325.erg'
+# log1_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/0_1325.txt'
+#
+# log2 = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/200_1525.erg'
+# log2_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/200_1525.txt'
+#
+# log3 = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/300_1525.erg'
+# log3_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/300_1525.txt'
+#
+# df_test = pd.DataFrame({'log1': abs(get_dataframe(log1, 'Car.ay', log1_text_file)['Mean']),
+#                         'log2': abs(get_dataframe(log2, 'Car.ay', log2_text_file)['Mean']),
+#                        'log3': abs(get_dataframe(log3, 'Car.ay', log3_text_file)['Mean'])})
+#
+# df_test['log1'] = df_test['log1'].shift(0)
+# df_test['log2'] = df_test['log2'].shift(0)
+# df_test['log3'] = df_test['log3'].shift(0)
+#
+# plt.plot(df_test.index, df_test['log1'], color='green')
+# plt.plot(df_test.index, df_test['log2'], color='blue')
+# plt.plot(df_test.index, df_test['log3'], color='red')
+#
+#
+# # plt.plot(df_test.index, np.subtract(df_test['log1'], df_test['log1']), color='green')
+# # plt.plot(df_test.index, np.subtract(df_test['log2'], df_test['log1']), color='blue')
+# # plt.plot(df_test.index, np.subtract(df_test['log3'], df_test['log1']), color='red')
+#
+# plt.minorticks_on()
+# plt.xlabel('Lap distance, m',fontsize=20)
+# plt.ylabel('Lateral acceleration, ms$^{-2}$', fontsize=20)
+# plt.yticks(fontsize=20)
+# plt.xticks(fontsize=20)
+#
+# #
+# ax = plt.gca()
+# ax.tick_params(axis='y', which='major', length=7, width=2.5)
+# ax.tick_params(axis='y', which='minor', length=5, width=2)
+# ax.tick_params(axis='x', which='major', length=7, width=2.5)
+# ax.tick_params(axis='x', which='minor', length=5, width=2)
+# ax.spines['bottom'].set_linewidth(2.5)
+# ax.spines['left'].set_linewidth(2.5)
+# plt.legend(['0 N DF, 1.325 CoP', '200 N DF, 1.525 CoP', '300 N DF, 1.525 CoP'], fontsize=20)
+#
+#
+# plt.show()
+
+
+# log1 = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/0_1325.erg'
+# log1_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/0_1325.txt'
+#
+# plt.plot(get_dataframe(log1, 'Car.Con.v', log1_text_file)['Mean'])
+# plt.plot(np.rad2deg(get_dataframe(log1, 'Car.Aero.tau_1', log1_text_file)['Mean']))
+#
+#
+# plt.ylim(ymax = 15, ymin = 0)
+# plt.minorticks_on()
+# plt.xlabel('Lap distance, m',fontsize=20)
+# plt.ylabel('Car speed, ms$^{-1}$ / Yaw $^o$', fontsize=20)
+# plt.yticks(fontsize=20)
+# plt.xticks(fontsize=20)
+# #
+# ax = plt.gca()
+# ax.tick_params(axis='y', which='major', length=7, width=2.5)
+# ax.tick_params(axis='y', which='minor', length=5, width=2)
+# ax.tick_params(axis='x', which='major', length=7, width=2.5)
+# ax.tick_params(axis='x', which='minor', length=5, width=2)
+#
+# plt.legend(['Car speed', 'Yaw angle'])
+#
+# plt.show()
+
+
+# CSum FLLD graph -------------------------------------------------------------------------------------
+
+# log1 = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/0_1325.erg'
+# log1_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/0_1325.txt'
+#
+# log2 = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/200_1525.erg'
+# log2_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/200_1525.txt'
+#
+# log3 = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/300_1525.erg'
+# log3_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/300_1525.txt'
+#
+# log4 = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/200_1525.erg'
+# log4_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/200_1525.txt'
+#
+# log5 = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/300_1525.erg'
+# log5_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/300_1525.txt'
+#
+# plt.plot((FLLD(log1, log1_text_file)[0]), color='green')
+# plt.plot((FLLD(log2, log2_text_file)[0]), color='blue')
+# plt.plot((FLLD(log3, log3_text_file)[0]), color='red')
+# plt.plot((FLLD(log4, log4_text_file)[0]), '--', color='blue')
+# plt.plot((FLLD(log5, log5_text_file)[0]), '--', color='red')
+#
+#
+# plt.minorticks_on()
+# plt.xlabel('Lap distance, m',fontsize=20)
+# plt.ylabel('FLLD, L-R', fontsize=20)
+# plt.yticks(fontsize=20)
+# plt.xticks(fontsize=20)
+# #
+# ax = plt.gca()
+# ax.tick_params(axis='y', which='major', length=7, width=2.5)
+# ax.tick_params(axis='y', which='minor', length=5, width=2)
+# ax.tick_params(axis='x', which='major', length=7, width=2.5)
+# ax.tick_params(axis='x', which='minor', length=5, width=2)
+#
+# plt.legend(['0 N DF; {}'.format(FLLD(log1, log1_text_file)[1]), '200 N DF; CoP 1.525; {}'.format(FLLD(log2, log2_text_file)[1]),
+#             '300 N DF; CoP 1.525; {}'.format(FLLD(log3, log3_text_file)[1]), '200 N DF; CoP 1.425; {}'.format(FLLD(log4, log4_text_file)[1]),
+#             '300 N DF; CoP 1.425; {}'.format(FLLD(log5, log5_text_file)[1])], fontsize=20)
+#
+#
+# plt.show()
+
+
+# TSA graph -------------------------------------------------------------------------------------
+
+# log1 = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/0_1325.erg'
+# log1_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/0_1325.txt'
+#
+# log2 = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/200_1525.erg'
+# log2_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/200_1525.txt'
+#
+# log3 = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/300_1525.erg'
+# log3_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Skidpad2/300_1525.txt'
+#
+# plt.plot((TSA(log1, log1_text_file)[0]), color='green')
+# plt.plot((TSA(log2, log2_text_file)[0]), color='blue')
+# plt.plot((TSA(log3, log3_text_file)[0]), color='red')
+#
+#
+# plt.minorticks_on()
+# plt.xlabel('Lap distance, m',fontsize=20)
+# plt.ylabel('TSA, F-R, $^o$', fontsize=20)
+# plt.yticks(fontsize=20)
+# plt.xticks(fontsize=20)
+# #
+# ax = plt.gca()
+# ax.tick_params(axis='y', which='major', length=7, width=2.5)
+# ax.tick_params(axis='y', which='minor', length=5, width=2)
+# ax.tick_params(axis='x', which='major', length=7, width=2.5)
+# ax.tick_params(axis='x', which='minor', length=5, width=2)
+#
+# plt.legend(['0 N DF, {}'.format(TSA(log1, log1_text_file)[1]), '200 N DF, {}'.format(TSA(log2, log2_text_file)[1]),
+#             '300 N DF, {}'.format(TSA(log3, log3_text_file)[1])], fontsize=20)
+#
+#
+# plt.show()
+
+
+# speeds over a lap ----------------------------------------------------------
+
+# log1 = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/200.erg'
+# log1_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/200.txt'
+#
+# log2 = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/0.erg'
+# log2_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/0.txt'
+#
+# log3 = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/300.erg'
+# log3_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/300.txt'
+#
+# df_test = pd.DataFrame({'log1': get_dataframe(log1, 'Car.Con.v', log1_text_file)['Mean'],
+#                         'log2':get_dataframe(log2, 'Car.Con.v', log2_text_file)['Mean'],
+#                        'log3': get_dataframe(log3, 'Car.Con.v', log3_text_file)['Mean']})
+#
+# df_test['log1'] = df_test['log1'].shift(-4)
+# df_test['log2'] = df_test['log2'].shift(0)
+# df_test['log3'] = df_test['log3'].shift(-4)
+#
+# fig, (ax1, ax2) = plt.subplots(2,1)
+# ax1.plot(df_test.index, df_test['log1'], color='green')
+# ax1.plot(df_test.index, df_test['log2'], color='blue')
+# ax1.plot(df_test.index, df_test['log3'], color='red')
+#
+# ax1.minorticks_on()
+# ax1.set_xlabel('Lap distance, m',fontsize=15)
+# ax1.set_ylabel('Car speed, ms$^{-1}$', fontsize=15)
+# plt.rc('xtick', labelsize=20)
+# plt.rc('ytick', labelsize=20)
+#
+#
+# ax2.plot(df_test.index, np.subtract(df_test['log1'], df_test['log1']), color='green')
+# ax2.plot(df_test.index, np.subtract(df_test['log2'], df_test['log1']), color='blue')
+# ax2.plot(df_test.index, np.subtract(df_test['log3'], df_test['log1']), color='red')
+#
+# ax2.minorticks_on()
+# ax2.set_xlabel('Lap distance, m',fontsize=15)
+# ax2.set_ylabel('Difference in car speed, ms$^{-1}$', fontsize=15)
+#
+# #
+# ax = plt.gca()
+# ax.tick_params(axis='y', which='major', length=7, width=2.5)
+# ax.tick_params(axis='y', which='minor', length=5, width=2)
+# ax.tick_params(axis='x', which='major', length=7, width=2.5)
+# ax.tick_params(axis='x', which='minor', length=5, width=2)
+# plt.rc('xtick', labelsize=20)
+# plt.rc('ytick', labelsize=20)
+# plt.legend(['0 N DF', '200 N DF', '300 N DF'], fontsize=20)
+#
+#
+# plt.show()
+
+
+# Delta with 95% confidence limits ----------------------------------------------------------
+
+# log1 = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/200.erg'
+# log1_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/200.txt'
+#
+# log2 = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/0.erg'
+# log2_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/0.txt'
+#
+# log3 = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/300.erg'
+# log3_text_file = 'D:/UGRacing/UGR EV23/VD/CM data/Acceleration/300.txt'
+#
+# df_test = pd.DataFrame({'log1': get_dataframe(log1, 'Car.Con.v', log1_text_file)['Mean'],
+#                         'log2':get_dataframe(log2, 'Car.Con.v', log2_text_file)['Mean'],
+#                        'log3': get_dataframe(log3, 'Car.Con.v', log3_text_file)['Mean']})
+#
+# df_test['log1'] = df_test['log1'].shift(0)
+# df_test['log2'] = df_test['log2'].shift(0)
+# df_test['log3'] = df_test['log3'].shift(0)
+#
+# # plt.plot(df_test.index, df_test['log1'])
+# # plt.plot(df_test.index, df_test['log2'])
+# # plt.plot(df_test.index, df_test['log3'])
+# # plt.legend(['0 N DF', '200 N DF', '300 N DF'], fontsize=20)
+#
+#
+#
+# plt.plot(DELTA(log1, log1_text_file, log2, log2_text_file)[0], linewidth=3.0)
+# plt.fill_between(DELTA(log1, log1_text_file, log2, log2_text_file)[1].index,
+#                  DELTA(log1, log1_text_file, log2, log2_text_file)[0] - np.array(DELTA(log1, log1_text_file, log2, log2_text_file)[1]),
+#                  DELTA(log1, log1_text_file, log2, log2_text_file)[0] + np.array(DELTA(log1, log1_text_file, log2, log2_text_file)[1]),
+#                  alpha=0.2, color='blue')
+# plt.plot(DELTA(log1, log1_text_file, log3, log3_text_file)[0], '--', linewidth=3.0, c='red')
+# plt.fill_between(DELTA(log1, log1_text_file, log3, log3_text_file)[1].index,
+#                  DELTA(log1, log1_text_file, log3, log3_text_file)[0] - np.array(DELTA(log1, log1_text_file, log3, log3_text_file)[1]),
+#                  DELTA(log1, log1_text_file, log3, log3_text_file)[0] + np.array(DELTA(log1, log1_text_file, log3, log3_text_file)[1]),
+#                  alpha=0.2, color='red')
+# # plt.plot(df_test.index, np.subtract(df_test['log2'], df_test['log1']), '--')
+# # plt.plot(df_test.index, np.subtract(df_test['log3'], df_test['log1']), ':')
+#
+# plt.minorticks_on()
+# plt.xlabel('Lap distance, m',fontsize=20)
+# plt.ylabel('Laptime variance, s', fontsize=20)
+# plt.yticks(fontsize=20)
+# plt.xticks(fontsize=20)
+# #
+# ax = plt.gca()
+# ax.tick_params(axis='y', which='major', length=7, width=2.5)
+# ax.tick_params(axis='y', which='minor', length=5, width=2)
+# ax.tick_params(axis='x', which='major', length=7, width=2.5)
+# ax.tick_params(axis='x', which='minor', length=5, width=2)
+#
+# plt.legend(['0 N DF', '', '300 N DF'], fontsize=20)
+#
+# plt.show()
+
+# ------------------------------------------------------------------
