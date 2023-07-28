@@ -5,7 +5,7 @@ This folder contains MATLAB scripts that allow to plot graphs based on ACTI coll
 To get the data ready, go to MoTeC and do the following:
 
 -Create a new workbook (right click on the driver tab and select *Create new workbook* <br>
--Right click on the background -> properties -> Add channel -> Add **Corr distance**, **Ground speed**, all **Tire slip angles**, all **Tire Load**, all **Tire pressure**, **Throttle** and **Brake** positions <br>
+-Right click on the background -> properties -> Add channel -> Add **Corr distance**, **Ground speed**, all **Tire slip angles**, all **Tire Loads**, all **Tire pressures**, **Longitudian and Lateral Accelerations** and **Throttle** and **Brake** positions <br>
 -Once the investigated lap data file is loaded, right click on the background again, select *Export data* <br>
 -Change *Output File Format* to MATLAB <br>
 -Change output sample rate to custom -> 1000Hz <br>
