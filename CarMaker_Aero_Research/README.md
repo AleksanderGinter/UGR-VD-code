@@ -16,6 +16,6 @@ The ERG file reader *get_dataframe* rounds down the logged sample's distance to 
 The dataframe also has statistics series, such as Mean, Median, Standard Deviation and Standard Error. These values are calculated from the last 5 laps by default and can be changed in the get_dataframe function.
 
 There are exemplary graphs scripts in the master file, covering all basic quantities. Simply provide the path to the datafiles. 
-For some reason, data from different files may be shifted on the x-axis. numpy subtract function was used to shift data distance references, make sure to use integers values.
+For some reason, data from different files may be shifted on the x-axis. numpy subtract function was used to shift data distance references, make sure to use integers values when shifting the data.
 
 Data I used for the research and CM car files are available on Teams - the link is provided in the _Data used for research_ file.
