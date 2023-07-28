@@ -8,7 +8,7 @@ Python scripts that read CM ERG files and plot graphs of selected data. Work in 
 - Once the car is run, open the session log *Simulation -> Session Log* or *Ctrl+i* and copy the data from the run. The data should contain times and distances and they are critical for the script to work.
 - Create a text file (preferably in the same folder as the ERG files) and **name it the same as a corresponding ERG run file**. The script may work without them being the same name, but it is very much recommended to do so.
 - If the session log is glitched (f.e. laps are 0.001s long, etc), or there is a need to combine laps, check the **_laptime text file reader_** analyse_data function and add a line that groups the data from the dataframe (just use the group_data function).
-- The **_CarMaker ERG file reader_** is the master script, but it imports function from the **_laptime text file reader_**. Make sure it is in the same directory or the text file reader is imported correctly.  In the master file, it is names as **_script.text_** so change or be aware of that!
+- The **_CarMaker ERG file reader_** is the master script, but it imports function from the **_laptime text file reader_**. Make sure it is in the same directory or the text file reader is imported correctly.  In the master file, it is named as **_script.text_** so change it or be aware of that!
 - To access the quantity needed, the following structure must be used:
 - get_dataframe(link to ERG file, quantity desired, link to time-dist text file)['Mean'] (It's recommended to use ['Mean']) or ['Time'] -> this refers to the time-distance text file reader, use this for mainly laptime boxplots
 
