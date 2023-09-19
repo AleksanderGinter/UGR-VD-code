@@ -1,0 +1,115 @@
+import re
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+links = ['D:/UGRacing/UGR EV24/CFD/B001_15ms.txt']
+
+
+# used as keys for sim cad version and speed of the flow
+runs = []
+runs_DRS = []
+
+# dict for dataframes
+data_dict = {}
+data_dict_DRS = {}
+
+# get keys
+for link in links:
+    # get key that is sim number and speed
+    runs.append(link.split('/')[len(link.split('/')) - 1][:-4])
+
+# for link in links_DRS:
+#     runs_DRS.append(link.split('/')[len(link.split('/')) - 1][:-4])
+
+
+def get_data(file):
+    """
+    reads text file line by line, gets lap no, laptime and distances
+
+    :param file: link to text file
+    :return: list of data (lap no, laptime and dist)
+    """
+
+    index_names = []
+    data = []
+
+    with open(file, 'r') as f:
+        for line in f.readlines():
+            if 'UGR' in line and 'no data' not in line:
+
+                # Extract the words after 'External flow'
+                # words = re.search(r'External flow: (\D[\w\s]+)', line).group(1).rstrip()
+                words = line.split()[2]
+
+                index_names.append(words)
+
+                # Find the index of the last square brackets
+                start_index = line.rfind('[')
+                end_index = line.rfind(']')
+
+                if start_index != -1 and end_index != -1:
+                    # Extract the substring between the last square brackets
+                    last_list_str = line[start_index + 1:end_index]
+
+                    # Split the substring by commas and extract the numerical values
+                    values = [float(val.strip()) for val in last_list_str.split(',')]
+                    data.append(values)
+
+            elif 'Totals' in line:
+                words = 'Total'
+                index_names.append(words)
+
+                start_index = line.rfind('[')
+                end_index = line.rfind(']')
+
+                if start_index != -1 and end_index != -1:
+                    # Extract the substring between the last square brackets
+                    last_list_str = line[start_index + 1:end_index]
+
+                    # Split the substring by commas and extract the numerical values
+                    values = [float(val.strip()) for val in last_list_str.split(',')]
+                    data.append(values)
+    return pd.DataFrame(data, index=index_names, columns=['Side Force', 'Downforce', 'Drag']).multiply(-1)
+
+
+for link, run_no in zip(links, runs):
+    # assign values to a dictionary
+    data_dict[run_no] = get_data(link)
+
+
+# use key from runs
+df_name = runs[0]
+
+
+# RW ------------------
+rearwing_rows = data_dict[df_name][data_dict[df_name].index.str.contains('Rear_wing')]
+second_values = rearwing_rows['Downforce']
+third_values = rearwing_rows['Drag']
+
+data_dict[df_name].loc['RW_Total', 'Downforce'] = second_values.sum()
+data_dict[df_name].loc['RW_Total', 'Drag'] = third_values.sum()
+
+
+# FW --------------------
+frontwing_rows = data_dict[df_name][data_dict[df_name].index.str.contains('Front_wing')]
+second_values = frontwing_rows['Downforce']
+third_values = frontwing_rows['Drag']
+
+data_dict[df_name].loc['FW_Total', 'Downforce'] = second_values.sum()
+data_dict[df_name].loc['FW_Total', 'Drag'] = third_values.sum()
+
+
+# Body --------------------
+
+row_names_body = ['Chassis', 'Driver_arms', 'Driver_helmet', 'Driver_neck', 'Driver_torso', 'Nosecone', 'Undertray_top']
+
+data_dict[df_name].loc['Body'] = data_dict[df_name].loc[row_names_body, ['Downforce', 'Drag']].sum(axis=0)
+data_dict[df_name].loc['Undertray'] = data_dict[df_name].loc['Undertray_bottom', ['Downforce', 'Drag']]
+data_dict[df_name].loc['sidepod'] = data_dict[df_name].loc['Sidepod', ['Downforce', 'Drag']]
+
+
+# print results, rounded up ---------------------
+
+print(data_dict[df_name].round(1).tail(8))
