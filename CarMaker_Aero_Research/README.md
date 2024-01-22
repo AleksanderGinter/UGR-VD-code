@@ -4,7 +4,7 @@ Python scripts that read CM ERG files and plot graphs of selected data. Work in 
 
 **How to get necessary data**
 - Install Pandas, NumPy and CMERG python packages
-- In CarMaker, in go to *File -> Output Quantities -> select the desired data*. Remember to change the folder path in top right (I recommend using /%D/%T, this way it will create a folder for the day and time tested) and then rename them after the file is created. Change buffer size and file size limit to max. **Make sure the ERG and ERG.info files have the same name!**
+- In CarMaker, in go to *File (may be another tab depending on the version) -> Output Quantities -> select the desired data*. Remember to change the folder path in top right (I recommend using /%D/%T, this way it will create a folder for the day and time tested) and then rename them after the file is created. Change buffer size and file size limit to max. **Make sure the ERG and ERG.info files have the same name!**
 - Once the car is run, open the session log *Simulation -> Session Log* or *Ctrl+i* and copy the data from the run. The data should contain times and distances and they are critical for the script to work.
 - Create a text file (preferably in the same folder as the ERG files) and **name it the same as a corresponding ERG run file**. The script may work without them being the same name, but it is very much recommended to do so.
 - If the session log is glitched (f.e. laps are 0.001s long, etc), or there is a need to combine laps, check the **_laptime text file reader_** analyse_data function and add a line that groups the data from the dataframe (just use the group_data function).
