@@ -1,115 +1,159 @@
 import re
-import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import pandas as pd
+import tkinter as tk
+from tkinter import filedialog, scrolledtext, messagebox, simpledialog, IntVar, Checkbutton, Button
 
-
-links = ['D:/UGRacing/UGR EV24/CFD/B001_15ms.txt']
-
-
-# used as keys for sim cad version and speed of the flow
+# Global variables
+links = []
 runs = []
-runs_DRS = []
-
-# dict for dataframes
 data_dict = {}
-data_dict_DRS = {}
+selected_rows = []
 
-# get keys
-for link in links:
-    # get key that is sim number and speed
-    runs.append(link.split('/')[len(link.split('/')) - 1][:-4])
 
-# for link in links_DRS:
-#     runs_DRS.append(link.split('/')[len(link.split('/')) - 1][:-4])
+def find_force(line):
+    start_index = line.rfind('[')
+    end_index = line.rfind(']')
+
+    if start_index != -1 and end_index != -1:
+        last_list_str = line[start_index + 1:end_index]
+        return np.round([float(val.strip()) for val in last_list_str.split(',')], 1)
+    return None
 
 
 def get_data(file):
-    """
-    reads text file line by line, gets lap no, laptime and distances
-
-    :param file: link to text file
-    :return: list of data (lap no, laptime and dist)
-    """
-
     index_names = []
     data = []
 
     with open(file, 'r') as f:
         for line in f.readlines():
             if 'UGR' in line and 'no data' not in line:
-
-                # Extract the words after 'External flow'
-                # words = re.search(r'External flow: (\D[\w\s]+)', line).group(1).rstrip()
                 words = line.split()[2]
-
                 index_names.append(words)
-
-                # Find the index of the last square brackets
-                start_index = line.rfind('[')
-                end_index = line.rfind(']')
-
-                if start_index != -1 and end_index != -1:
-                    # Extract the substring between the last square brackets
-                    last_list_str = line[start_index + 1:end_index]
-
-                    # Split the substring by commas and extract the numerical values
-                    values = [float(val.strip()) for val in last_list_str.split(',')]
-                    data.append(values)
-
+                data.append(find_force(line))
             elif 'Totals' in line:
                 words = 'Total'
                 index_names.append(words)
+                data.append(find_force(line))
 
-                start_index = line.rfind('[')
-                end_index = line.rfind(']')
-
-                if start_index != -1 and end_index != -1:
-                    # Extract the substring between the last square brackets
-                    last_list_str = line[start_index + 1:end_index]
-
-                    # Split the substring by commas and extract the numerical values
-                    values = [float(val.strip()) for val in last_list_str.split(',')]
-                    data.append(values)
     return pd.DataFrame(data, index=index_names, columns=['Side Force', 'Downforce', 'Drag']).multiply(-1)
 
 
-for link, run_no in zip(links, runs):
-    # assign values to a dictionary
-    data_dict[run_no] = get_data(link)
+def display_data():
+    if data_dict:
+        display_window = tk.Toplevel(root)
+        display_window.title("Data Display")
+        display_window.geometry("600x800")
+
+        text_widget = scrolledtext.ScrolledText(display_window, wrap=tk.WORD)
+        text_widget.pack(expand=True, fill="both")
+
+        for run_no, df in data_dict.items():
+            text_widget.insert(tk.END, f"Run No: {run_no}\n")
+            text_widget.insert(tk.END, df.to_string() + "\n\n")
 
 
-# use key from runs
-df_name = runs[0]
+def open_file():
+    file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+    print(file_path)
+    if file_path:
+        run_no = file_path.split('/')[len(file_path.split('/')) - 1][:-4]
+        data_dict[run_no] = get_data(file_path)
 
 
-# RW ------------------
-rearwing_rows = data_dict[df_name][data_dict[df_name].index.str.contains('Rear_wing')]
-second_values = rearwing_rows['Downforce']
-third_values = rearwing_rows['Drag']
-
-data_dict[df_name].loc['RW_Total', 'Downforce'] = second_values.sum()
-data_dict[df_name].loc['RW_Total', 'Drag'] = third_values.sum()
+def update_selected_runs(run, variable):
+    if variable.get():
+        selected_rows.append(run)
+    else:
+        selected_rows.remove(run)
 
 
-# FW --------------------
-frontwing_rows = data_dict[df_name][data_dict[df_name].index.str.contains('Front_wing')]
-second_values = frontwing_rows['Downforce']
-third_values = frontwing_rows['Drag']
+def group_rows():
+    if data_dict:
+        group_window = tk.Toplevel(root)
+        group_window.title("Group Rows")
+        group_window.geometry("400x800")  # Set the window size
 
-data_dict[df_name].loc['FW_Total', 'Downforce'] = second_values.sum()
-data_dict[df_name].loc['FW_Total', 'Drag'] = third_values.sum()
+        group_name = simpledialog.askstring("Input", "Enter Group Name:")
+
+        # Create Checkbuttons for each row
+        row_vars = {}
+        for run_no, df in data_dict.items():
+            for row in df.index:
+                var = IntVar(value=0)
+                row_vars[(run_no, row)] = var
+                Checkbutton(group_window, text=f"{run_no}: {row}", variable=var).pack(anchor=tk.W)
+
+        def create_group():
+            selected_rows_info = [(run, row) for (run, row), var in row_vars.items() if var.get() == 1]
+
+            if selected_rows_info:
+                # Sum up selected rows column-wise
+                sum_df = pd.concat([data_dict[run].loc[[row]] for run, row in selected_rows_info]).sum(axis=0)
+                # Create a new DataFrame with the sum values
+                grouped_df = pd.DataFrame([sum_df], index=[group_name], columns=['Side Force', 'Downforce', 'Drag'])
+
+                if group_name in data_dict:
+                    data_dict[group_name] = pd.concat([data_dict[group_name], grouped_df])
+                else:
+                    data_dict[group_name] = grouped_df
+
+                messagebox.showinfo("Success", f"Rows grouped under {group_name}")
+                group_window.destroy()
+            else:
+                messagebox.showwarning("Warning", "No rows selected for grouping")
+
+                # Add "Create Group" button
+        tk.Button(group_window, text="Create Group", command=create_group).pack()
+
+def create_default_groups():
+    if data_dict:
+        # Group and sum all rows containing "Front_wing" under Front wing
+        front_wing_rows = [(run, row) for (run, df) in data_dict.items() for row in df.index if 'Front_wing' in row]
+        if front_wing_rows:
+            front_wing_sum = pd.concat([data_dict[run].loc[[row]] for (run, row) in front_wing_rows]).sum(axis=0)
+            data_dict['Front Wing'] = pd.DataFrame([front_wing_sum], index=['Front Wing'], columns=['Side Force', 'Downforce', 'Drag'])
+
+        # Group and sum all rows containing "Rear_wing" under Rear wing
+        rear_wing_rows = [(run, row) for (run, df) in data_dict.items() for row in df.index if 'Rear_wing' in row]
+        if rear_wing_rows:
+            rear_wing_sum = pd.concat([data_dict[run].loc[[row]] for (run, row) in rear_wing_rows]).sum(axis=0)
+            data_dict['Rear Wing'] = pd.DataFrame([rear_wing_sum], index=['Rear Wing'], columns=['Side Force', 'Downforce', 'Drag'])
+
+        # Group and sum all rows containing "Undertray" under Undertray
+        undertray_rows = [(run, row) for (run, df) in data_dict.items() for row in df.index if 'Undertray' in row]
+        if undertray_rows:
+            undertray_sum = pd.concat([data_dict[run].loc[[row]] for (run, row) in undertray_rows]).sum(axis=0)
+            data_dict['Undertray'] = pd.DataFrame([undertray_sum], index=['Undertray'], columns=['Side Force', 'Downforce', 'Drag'])
+
+        messagebox.showinfo("Success", "Default groups created")
 
 
-# Body --------------------
+# Create main window
+root = tk.Tk()
+root.title("Data Viewer")
 
-row_names_body = ['Chassis', 'Driver_arms', 'Driver_helmet', 'Driver_neck', 'Driver_torso', 'Nosecone', 'Undertray_top']
+# Calculate the screen width and height
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
 
-data_dict[df_name].loc['Body'] = data_dict[df_name].loc[row_names_body, ['Downforce', 'Drag']].sum(axis=0)
-data_dict[df_name].loc['Undertray'] = data_dict[df_name].loc['Undertray_bottom', ['Downforce', 'Drag']]
-data_dict[df_name].loc['sidepod'] = data_dict[df_name].loc['Sidepod', ['Downforce', 'Drag']]
+# Set the window size and position it in the center
+window_width = 200
+window_height = 400
+window_x = (screen_width - window_width) // 2
+window_y = (screen_height - window_height) // 2
+
+root.geometry(f"{window_width}x{window_height}+{window_x}+{window_y}")
+
+button_frame = tk.Frame(root)
+button_frame.pack(anchor='center')
 
 
-# print results, rounded up ---------------------
+# Create buttons with larger font
+Button(button_frame, text="Open File", command=open_file, font=("Arial", 14)).pack(anchor=tk.W, pady=5)
+Button(button_frame, text="Display Data", command=display_data, font=("Arial", 14)).pack(anchor=tk.W, pady=5)
+Button(button_frame, text="Default Groups", command=create_default_groups, font=("Arial", 14)).pack(anchor=tk.W, pady=5)
+Button(button_frame, text="Group Rows", command=group_rows, font=("Arial", 14)).pack(anchor=tk.W, pady=5)
 
-print(data_dict[df_name].round(1).tail(8))
+root.mainloop()
+
