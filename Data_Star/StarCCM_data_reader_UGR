@@ -43,7 +43,7 @@ def display_data():
     if data_dict:
         display_window = tk.Toplevel(root)
         display_window.title("Data Display")
-        display_window.geometry("600x800")
+        display_window.geometry("800x800")
 
         text_widget = scrolledtext.ScrolledText(display_window, wrap=tk.WORD)
         text_widget.pack(expand=True, fill="both")
@@ -106,6 +106,7 @@ def group_rows():
                 # Add "Create Group" button
         tk.Button(group_window, text="Create Group", command=create_group).pack()
 
+
 def create_default_groups():
     if data_dict:
         # Group and sum all rows containing "Front_wing" under Front wing
@@ -126,8 +127,18 @@ def create_default_groups():
             undertray_sum = pd.concat([data_dict[run].loc[[row]] for (run, row) in undertray_rows]).sum(axis=0)
             data_dict['Undertray'] = pd.DataFrame([undertray_sum], index=['Undertray'], columns=['Side Force', 'Downforce', 'Drag'])
 
+        # Group and sum all rows containing "body" under Body
+        body_rows = [(run, row) for (run, df) in data_dict.items() for row in df.index if 'Body' in row]
+        if body_rows:
+            body_sum = pd.concat([data_dict[run].loc[[row]] for (run, row) in body_rows]).sum(axis=0)
+            data_dict['Body'] = pd.DataFrame([body_sum], index=['Body'], columns=['Side Force', 'Downforce', 'Drag'])
+
         messagebox.showinfo("Success", "Default groups created")
 
+
+def clear_data():
+    data_dict.clear()
+    messagebox.showinfo("Success", "Data cleared")
 
 # Create main window
 root = tk.Tk()
@@ -154,6 +165,6 @@ Button(button_frame, text="Open File", command=open_file, font=("Arial", 14)).pa
 Button(button_frame, text="Display Data", command=display_data, font=("Arial", 14)).pack(anchor=tk.W, pady=5)
 Button(button_frame, text="Default Groups", command=create_default_groups, font=("Arial", 14)).pack(anchor=tk.W, pady=5)
 Button(button_frame, text="Group Rows", command=group_rows, font=("Arial", 14)).pack(anchor=tk.W, pady=5)
+Button(button_frame, text="Clear Data", command=clear_data, font=("Arial", 14)).pack(anchor=tk.W, pady=5)
 
 root.mainloop()
-
