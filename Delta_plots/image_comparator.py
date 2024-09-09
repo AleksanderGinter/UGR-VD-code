@@ -61,6 +61,15 @@ def subtract_images(master, slave, mask):
     diff = cv2.subtract(master, slave)
     diff = blur_image(diff)
 
+    # colormaps
+    diff = cv2.normalize(diff, None, 0, 255, cv2.NORM_MINMAX)
+    # Convert the normalized image to 8-bit (if it's not already)
+    diff = diff + 127.5
+    diff = diff.astype(np.uint8)
+    # Apply a colormap
+
+    diff = rainbow_haze(diff)
+
     # For white pixels, retain the original white color
     diff[mask] = 255  # Since white is represented by [1, 1, 1] in normalized space
 
@@ -89,13 +98,16 @@ def save_image(image, name, save_path):
 
 
 # -----------------------------
-master_sim_path = 'D:/UGRacing/UGR EV24/CFD/Scenes/CFD scenes/B027 25mm RH 15ms scenes/Z CpT'
-slave_sim_path = 'D:/UGRacing/UGR EV24/CFD/Scenes/CFD scenes/B029 25mm RH 15ms Scenes/Z CpT'
+master_sim_path = 'D:/UGRacing/UGR EV24/CFD/Scenes/CFD scenes/B027 25mm RH 15ms scenes/X CpT'
+slave_sim_path = 'D:/UGRacing/UGR EV24/CFD/Scenes/CFD scenes/B029 25mm RH 15ms Scenes/X CpT'
+
+save_path = 'D:/UGRacing/UGR EV24/CFD/Scenes/CFD scenes/B029 25mm RH 15ms Scenes/DELTA B027/X dCpT'
+# ----------------------------
 
 master_sim_name = find_sim_name(master_sim_path)
 slave_sim_name = find_sim_name(slave_sim_path)
 
-save_path = 'D:/UGRacing/UGR EV24/CFD/Scenes/CFD scenes/B029 25mm RH 15ms Scenes/DELTA B027/Z dCpT'
+
 elements_no = np.minimum(len(os.listdir(master_sim_path)), len(os.listdir(slave_sim_path)))
 # todo make so it picks list with less entries
 
